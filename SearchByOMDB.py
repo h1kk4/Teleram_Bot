@@ -1,14 +1,19 @@
 import omdb
 from xmlrpc.client import ServerProxy
 from settings import Settings
+import logging
+logging.basicConfig(format="""%(asctime)s - %(name)s -
+                        %(levelname)s - %(message)s""",
+                    level=logging.INFO)
+
+logger = logging.getLogger(__name__)
 class OMDB():
 
     def __init__(self):
         self.Client=omdb.Client(apikey=Settings.apikey)
         omdb.set_default('apikey', Settings.apikey )
-        print(self.Client)
 
-    def search_title(self, params):
+    def get_title(self, params):
         data = omdb.imdbid("tt%s"%params)
         return data.title
 
@@ -21,4 +26,6 @@ class OMDB():
         for label in data:
             title += ''.join([label, ' '])
         data1 = omdb.get(title=title, season = season, episode = episode)
+        logger.info("search for title %s, season %s, episode %s"%(title, season, episode))
+        logger.info("returned data %s"%(data1))
         return data1.imdb_id

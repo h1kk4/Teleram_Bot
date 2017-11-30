@@ -32,7 +32,6 @@ class OpenSubtitles(object):
     def search_subtitles(self, params):
         '''Returns a list with the subtitles info.
         '''
-        print('params',params)
         self.data = self.xmlrpc.SearchSubtitles(self.token, params)
         return self.data
 

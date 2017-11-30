@@ -32,3 +32,10 @@ class Flags(object):
 
     def get_id_series(self):
         return self.id_series
+
+    def reset(self):
+        # TODO add resetting flags at the end of searching
+        self.flag_series = False
+        self.id_series = ''
+        self.flag_search = False
+        logger.info("reset flag")
