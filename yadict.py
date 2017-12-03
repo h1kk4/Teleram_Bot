@@ -25,8 +25,12 @@ def get_card(word):
 
     card = {
         'word': word,
-        'syn': []
+        'syn': [],
+        'src':'yadict'
+
     }
+
+
 
     for definition in res['def']:
 
@@ -35,10 +39,10 @@ def get_card(word):
 
         for translation in definition['tr']:
 
-            if 'mean' not in translation[0]:
+            if 'mean' not in translation:
                 continue
 
-            for mean in translation[0]['mean']:
+            for mean in translation['mean']:
                 card['syn'].append(mean['text'])
 
     return card if card['syn'] else None

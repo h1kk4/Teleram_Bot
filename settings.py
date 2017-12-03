@@ -9,6 +9,6 @@ class Settings(object):
 
     HelpTxt = "help"
 
-    telegram_token="443853738:AAFqfCt74WeSS7ea75Sc2mpEbGAuZacdaiI"
+    telegram_token = "443853738:AAFqfCt74WeSS7ea75Sc2mpEbGAuZacdaiI"
 
-    apikey="46e2cce"
+    apikey = "46e2cce"

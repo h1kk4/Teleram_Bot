@@ -3,7 +3,6 @@ from settings import Settings
 
 
 class OpenSubtitles(object):
-
     def __init__(self):
         self.xmlrpc = ServerProxy(Settings.OPENSUBTITLES_SERVER,
                                   allow_none=True)
@@ -36,11 +35,9 @@ class OpenSubtitles(object):
         return self.data
 
     def search_movies_on_imdb(self, params):
-
         self.data = self.xmlrpc.SearchMoviesOnIMDB(self.token, params)
         return self.data
 
     def download_subtitles(self, params):
         self.data = self.xmlrpc.DownloadSubtitles(self.token, params)
         return self.data
-

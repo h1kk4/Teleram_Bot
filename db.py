@@ -2,8 +2,9 @@ import os
 from urllib import parse
 import psycopg2
 
-#parse.uses_netloc.append("postgres")
-#url = parse.urlparse(os.environ["DATABASE_URL"])
+
+# parse.uses_netloc.append("postgres")
+# url = parse.urlparse(os.environ["DATABASE_URL"])
 
 
 class DataBase:
@@ -60,7 +61,6 @@ class DataBase:
             return False
 
     def AddWordsToLibrary(self, imdb_id, word):
-
         word_id = self.GetWordID(word)
         self.cur.execute(
             """INSERT INTO subtitle_words (imdb_id, word_id) VALUES (%s,%s);""",
@@ -68,11 +68,9 @@ class DataBase:
         )
         self.conn.commit()
 
-        return "Create"
-
     def GetWordID(self, word):
         self.cur.execute(
-            """SELECT * FROM words WHERE word=\'{}\'
+            """SELECT id FROM words WHERE word=\'{}\'
             """.format(word)
         )
         res = self.cur.fetchall()
@@ -83,9 +81,9 @@ class DataBase:
 
     def AddToIDList(self, word):
         self.cur.execute(
-            """SELECT * FROM words where id in (SELECT max(id) FROM words GROUP BY word ) order by id desc"""
+            """SELECT max(id) FROM words"""
         )
-        curr_id = self.cur.fetchall()[0][0] + 1
+        curr_id = self.cur.fetchall()+1
 
         self.cur.execute(
             """INSERT INTO words (id, word) VALUES (%s,%s);""",
@@ -122,7 +120,13 @@ class DataBase:
             LEFT JOIN words AS w
             ON nuw.word_id = w.id;""", (imdb_id, user_id)
                          )
-        return ((self.cur.fetchall()))
+        dic = {}
+        i = 0
+        for label in self.cur.fetchall():
+            dic[i] = label
+            i += 1
+        print("it's dic of words", dic)
+        return dic
 
     def GetUserLibrary(self, user_id):
 
@@ -132,7 +136,7 @@ class DataBase:
         dic = {}
         i = 0
         for label in self.cur.fetchall():
-            dic[i]=label
-            i+=1
-        print("it's dic", dic)
+            dic[i] = label
+            i += 1
+        print("it's dic of library", dic)
         return dic

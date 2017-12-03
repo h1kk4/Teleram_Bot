@@ -1,28 +1,34 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 import logging
+import yadict
+import wordsapi
+import urbandict
+
 logging.basicConfig(format="""%(asctime)s - %(name)s -
                         %(levelname)s - %(message)s""",
                     level=logging.INFO)
 
 logger = logging.getLogger(__name__)
-def get_navigate_markup(dic , index=0):
 
+
+def get_navigate_markup(dic, index=0):
     # if len(dic) > 1:
     #     buttons.append(dict('←',
     #                         callback_data='navigate_%s_%d' % (str_json, (index - 1) % len(dic))))
 
     button_list = [
-        InlineKeyboardButton("⬅️", callback_data="n_%s_%d"%(str(dic),(index - 1)%len(dic))),
-        InlineKeyboardButton("ok", callback_data="s_%s_%d"%(str(dic),index)),
-        InlineKeyboardButton("➡️", callback_data="n_%s_%d"%(str(dic),(index + 1)%len(dic)))
+        InlineKeyboardButton("⬅️", callback_data="n_%s_%d" % (str(dic), (index - 1) % len(dic))),
+        InlineKeyboardButton("ok", callback_data="s_%s_%d" % (str(dic), index)),
+        InlineKeyboardButton("➡️", callback_data="n_%s_%d" % (str(dic), (index + 1) % len(dic)))
     ]
-    return  InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
+    return InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
 
     # buttons.append('ok',
-        #                     callback_data='select_%s_%d' % (dic, index % len(dic)))
+    #                     callback_data='select_%s_%d' % (dic, index % len(dic)))
     # if len(dic) > 1:
     #     buttons.append(dict('→',
     #                         callback_data='navigate_%s_%d' % (str_json, (index + 1) % len(dic))))
+
 
 def library_navigate_markup(len, index=0):
     button_list = [
@@ -32,17 +38,20 @@ def library_navigate_markup(len, index=0):
     ]
     return InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
 
+
 def main_menu(update):
     keyboard = [[InlineKeyboardButton("Add new subs",
-                                          callback_data='search')],
-                    [InlineKeyboardButton("My Library",
-                                          callback_data='learn')],
-                    ]
+                                      callback_data='search')],
+                [InlineKeyboardButton("My Library",
+                                      callback_data='learn')],
+                ]
     return InlineKeyboardMarkup(keyboard)
 
-def render_navigate_markup(reply_markup, dic, update , index):
+
+def render_navigate_markup(reply_markup, dic, update, index=0):
     update.message.reply_text("http://imdb.com/title/tt%s" % dic[index][1], reply_markup=reply_markup)
     logger.info("render_navigate_markup")
+
 
 def build_menu(buttons,
                n_cols,
@@ -56,22 +65,88 @@ def build_menu(buttons,
     return menu
 
 
-# def learning_navigate_markup(dic, index = 0):
-#     #TODO back here
-#     logger.info("Navigating")
-#     button_list = []
-#     if  index - 5>=0:
-#         button_list.append(InlineKeyboardButton("⬅️", callback_data="ln_%s_%d" % (str(dic), (index - 5))))
-#     if  index + 5 <=len(dic):
-#         button_list.append(InlineKeyboardButton("➡️", callback_data="ln_%s_%d" % (str(dic), (index + 5))))
-#     count = 0
-#     for x in dic:
-#         if count == 5:
-#             break
-#         count+=1
-#         button_list.append(InlineKeyboardButton("%s"%x[1], callback_data="ln_%s" % (str(dic))))
-#
-#
-#
-#
-#     return InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
+def get_learn_list(dic, index=0):
+    k = 0
+    out = ''
+    while (k <= 4 and index <= len(dic)-1):
+        out = out + "%s) *%s* \n" % (str(index), str(dic[index][1]))
+        k += 1
+        index += 1
+    return out
+
+
+def learn_navigate_markup(index, len):
+    logger.info("Learn navigate")
+    button_list = []
+    head = []
+    if (index - 4)<0:
+        k = 0
+    else:
+        k = index -4
+    head.append(InlineKeyboardButton(" 📋⬅️ ", callback_data="len_%s" % str(k)))
+    if index + 4 <= len-1:
+        head.append(InlineKeyboardButton("➡️  📋", callback_data="len_%s" % str(index + 4)))
+    k = 0
+    while (k <= 4 and index <= len-1):
+        button_list.append(InlineKeyboardButton("%s" % index, callback_data="les_%s" % index))
+        k += 1
+        index += 1
+
+    finish = [(InlineKeyboardButton("Finish ✅", callback_data="ln_%s" % str(len)))]
+    return InlineKeyboardMarkup(build_menu(button_list, n_cols=5, header_buttons=head, footer_buttons=finish))
+
+
+def learn_card(index):
+    button_list = [
+        InlineKeyboardButton("⬅️ Go back", callback_data="len_%s" % str(index))]
+    return InlineKeyboardMarkup(build_menu(button_list, n_cols=1))
+
+
+def get_card(word):
+    logger.info("creating word card")
+    card = wordsapi.get_cards(word)
+    print("card wordsapi", card)
+    if not card:
+        card = yadict.get_card(word)
+    if not card:
+        card = urbandict.get_card(word)
+
+    if card:
+        ts = yadict.get_transcription(word)
+        if ts:
+            card['ts'] = ts
+
+        card["translation"] = yadict.get_translations(word)
+        print(yadict.get_translations(word))
+        return card
+    return None
+
+
+def get_study_card(card):
+    logger.info("get word card ")
+    out = ""
+    print(card)
+    if (card['src'] == 'wordsapi'):
+        logger.info("yadict search")
+        out += "Word - *%s*\n" % str(card['word'])
+        out += "Transcription - %s\n" % str(card['pron'])
+        out += "Definitions :\n"
+        for label in card['def']:
+            out += " - _%s_\n" % str(label)
+
+    elif (card['src'] == "yadict"):
+        logger.info("yadict search")
+        out += "Word - *%s*\n" % str(card['word'])
+        if 'ts' in card:
+            out += "Transcription - %s\n" % str(card['ts'])
+        out += "Synonyms :\n"
+        for label in card['syn']:
+            out += " - _%s_\n" % str(label)
+    else:
+        out += "Word - *%s*\n" % str(card['word'])
+        for x in card['def']:
+            for y in x:
+                out += " - _%s - %s_ \n" % (str(y['text']), str(y['type']))
+    if 'translation' in card:
+        out += "Translation - %s"% card['translation']
+    return out
