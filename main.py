@@ -22,7 +22,6 @@ logging.basicConfig(format="""%(asctime)s - %(name)s -
 
 logger = logging.getLogger(__name__)
 
-
 class SubsBot:
     def __init__(self, Token):
         self.__token = Token
@@ -67,6 +66,8 @@ class SubsBot:
             self.ask_for_season_episode(bot, id, update)
 
     def download_subtitle_for_film(self, bot, update, id):
+
+        #TODO Здеь не добавляются сабы в бд
         logger.info("Download method OpenSubtitles token %s" % OPExample.login())
         postgre = DataBase()
         if postgre.CheckSubtitlesLibrary(id):
@@ -78,6 +79,7 @@ class SubsBot:
 
             FileData = (OPExample.download_subtitles([IDSubtitleFile]))
             data = get_words_set(FileData['data'][0]['data'])
+            self.add_words_to_db(id, data)
         else:
             logger.info("subtitles for this title -%s already in library" % id)
 
@@ -93,7 +95,8 @@ class SubsBot:
             if IDSubtitleFile == '':
                 print(update)
                 bot.send_message(text="Sorry, I can't find any subtitles",
-                                 chat_id=update.callback_query.message.chat_id)
+                                 chat_id=update.message.chat_id)
+                return
 
             FileData = (OPExample.download_subtitles([IDSubtitleFile]))
             data = get_words_set(FileData['data'][0]['data'])
@@ -140,6 +143,8 @@ class SubsBot:
 
     def search_title_or_episode(self, bot, update):
 
+        #TODO Сделать поиск по двум апишкам более элегантым
+
         if not flags:
             bot.send_message(chat_id=update.message.chat_id, text="Send /help to get instructions")
             return
@@ -167,8 +172,13 @@ class SubsBot:
                     break
             if id_of_series == '':
                 title = OMDBExample.get_title(flags[update.message.chat_id].get_id_series()) + " "
-                id_of_series = OMDBExample.search_series(title + update.message.text)
-
+                data = OMDBExample.search_series(title + update.message.text)
+                if data != {}:
+                    id_of_series = data.imdb_id
+                else:
+                    bot.send_message(text="Sorry, I can't find any subtitles",
+                                 chat_id=update.message.chat_id)
+                    return
             logger.info("Id of episode of %s%s" % (title, id_of_series))
 
             bot.send_message(chat_id=update.message.chat_id, text="http://imdb.com/title/%s" % id_of_series)
@@ -224,6 +234,11 @@ class SubsBot:
             return 0
 
     def button(self, bot, update):
+
+
+        #TODO Для каждой клавиши по функции
+
+
         logger.info("Method button")
         query = update.callback_query
         chat_id = query.message.chat_id
@@ -291,9 +306,9 @@ class SubsBot:
             postgre = DataBase()
             flags[chat_id].set_words(postgre.GetWordsForTitle(chat_id, title))
 
-            dic = flags[chat_id].get_words()
-            reply_markup = learn_navigate_markup(0, len(dic)   )
-            bot.edit_message_text(text= get_learn_list(dic),
+            words = flags[chat_id].get_words()
+            reply_markup = learn_navigate_markup(0, len(words), index)
+            bot.edit_message_text(text= get_learn_list(words),
                                   reply_markup=reply_markup,
                                   chat_id=chat_id,
                                   message_id=query.message.message_id,
@@ -305,6 +320,7 @@ class SubsBot:
             # Chosen navigation button in library
 
             index = int(query.data.split("_")[1])
+            print("dic  - %s"%index)
             dic = flags[chat_id].get_library()
             print("dic - ",dic[index][1])
             logger.info("index %s title %s" % (index, dic[index][1]))
@@ -320,13 +336,13 @@ class SubsBot:
             # Chosen navigation button in learning menu
 
             index = int(query.data.split("_")[1])
+            title = int(query.data.split("_")[2])
             logger.info("next card on learning ")
-            dic = flags[chat_id].get_words()
+            words = flags[chat_id].get_words()
+            logger.info("index %s word %s" % (index, words[index][1]))
 
-            logger.info("index %s word %s" % (index, dic[index][1]))
-
-            reply_markup = learn_navigate_markup(index, len(dic))
-            bot.edit_message_text(text=get_learn_list(dic, index),
+            reply_markup = learn_navigate_markup(index, len(words) , title)
+            bot.edit_message_text(text=get_learn_list(words, index),
                                   reply_markup=reply_markup,
                                   chat_id=chat_id,
                                   message_id=query.message.message_id,
@@ -337,17 +353,26 @@ class SubsBot:
             # Chose word to get more information
 
             index = int(query.data.split("_")[1])
+            title = int(query.data.split("_")[2])
             dic = flags[chat_id].get_words()
             logger.info("Word to learn - %s" %dic[index][1])
             card = get_card(dic[index][1])
             print("card - ",card)
-            reply_markup = learn_card(index)
+            reply_markup = learn_card(index, title)
             bot.edit_message_text(text= get_study_card(card),
                                   reply_markup=reply_markup,
                                   chat_id=chat_id,
                                   message_id=query.message.message_id,
                                   parse_mode=ParseMode.MARKDOWN)
 
+
+        if (query.data.split('_')[0]=='learn'):
+            # User said that he know this word
+            index = int(query.data.split("_")[1])
+            word = flags[chat_id].get_words()
+            logger.info("Learned word is-%s"%word[index][1])
+            postgre = DataBase()
+            postgre.LearnWord(word[index][0], chat_id)
         return logger.info("done button method")
 
 

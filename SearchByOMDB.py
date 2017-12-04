@@ -44,4 +44,5 @@ class OMDB():
         data1 = omdb.get(title=title, season=season, episode=episode)
         logger.info("search for title %s, season %s, episode %s" % (title, season, episode))
         logger.info("returned data %s" % (data1))
-        return data1.imdb_id
+
+        return data1

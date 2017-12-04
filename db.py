@@ -74,7 +74,8 @@ class DataBase:
             """.format(word)
         )
         res = self.cur.fetchall()
-        if len(res) == 0:
+        if len(res) != 0:
+            print("res",res)
             return res[0][0]
         else:
             return (self.AddToIDList(word))
@@ -83,7 +84,7 @@ class DataBase:
         self.cur.execute(
             """SELECT max(id) FROM words"""
         )
-        curr_id = self.cur.fetchall()+1
+        curr_id = (self.cur.fetchall())[0][0]+1
 
         self.cur.execute(
             """INSERT INTO words (id, word) VALUES (%s,%s);""",
@@ -92,10 +93,10 @@ class DataBase:
         self.conn.commit()
         return curr_id
 
-    def LearnWord(self, word, user_id):
+    def LearnWord(self, word_id, user_id):
         self.cur.execute(
-            """INSERT INTO user_words (chat_id, word) VALUES (%s,%s);""",
-            (user_id, word)
+            """INSERT INTO user_words (chat_id, word_id) VALUES (%s,%s);""",
+            (user_id, word_id)
         )
         self.conn.commit()
 

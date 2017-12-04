@@ -1,6 +1,12 @@
 from xmlrpc.client import ServerProxy
 from settings import Settings
+import logging
 
+logging.basicConfig(format="""%(asctime)s - %(name)s -
+                        %(levelname)s - %(message)s""",
+                    level=logging.INFO)
+
+logger = logging.getLogger(__name__)
 
 class OpenSubtitles(object):
     def __init__(self):
@@ -32,6 +38,7 @@ class OpenSubtitles(object):
         '''Returns a list with the subtitles info.
         '''
         self.data = self.xmlrpc.SearchSubtitles(self.token, params)
+        logger.info("data - %s"%self.data)
         return self.data
 
     def search_movies_on_imdb(self, params):
