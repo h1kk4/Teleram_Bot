@@ -28,7 +28,8 @@ def get_card(word, min_len=15, max_len=128):
     res = response.json()
     card = {
         'word': word,
-        'def': []
+        'def': [],
+        'src': "urbandict"
     }
 
     for result in res['list']:

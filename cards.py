@@ -11,17 +11,24 @@ logging.basicConfig(format="""%(asctime)s - %(name)s -
 logger = logging.getLogger(__name__)
 
 
-def get_navigate_markup(dic, index=0):
+def get_navigate_markup(len, index=0):
     # if len(dic) > 1:
     #     buttons.append(dict('←',
     #                         callback_data='navigate_%s_%d' % (str_json, (index - 1) % len(dic))))
 
-    button_list = [
-        InlineKeyboardButton("⬅️", callback_data="n_%s_%d" % (str(dic), (index - 1) % len(dic))),
-        InlineKeyboardButton("ok", callback_data="s_%s_%d" % (str(dic), index)),
-        InlineKeyboardButton("➡️", callback_data="n_%s_%d" % (str(dic), (index + 1) % len(dic)))
-    ]
-    return InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
+    button_list = []
+    k = 1
+    if len > 1:
+        button_list.append(InlineKeyboardButton("⬅️", callback_data="n_%s" % str((index - 1) % len)))
+        k += 1
+
+    button_list.append(InlineKeyboardButton("ok", callback_data="s_%s" % (str(index))), )
+
+    if len > 1:
+        button_list.append(InlineKeyboardButton("➡️", callback_data="n_%s" % str((index + 1) % len)))
+        k += 1
+
+    return InlineKeyboardMarkup(build_menu(button_list, n_cols=k))
 
     # buttons.append('ok',
     #                     callback_data='select_%s_%d' % (dic, index % len(dic)))
@@ -31,19 +38,34 @@ def get_navigate_markup(dic, index=0):
 
 
 def library_navigate_markup(len, index=0):
-    button_list = [
-        InlineKeyboardButton("⬅️", callback_data="ln_%s" % str((index - 1) % len)),
-        InlineKeyboardButton("ok", callback_data="ls_%s" % str((index))),
-        InlineKeyboardButton("➡️", callback_data="ln_%s" % str((index + 1) % len))
-    ]
+    button_list = [ ]
+    if len > 1:
+        button_list.append(InlineKeyboardButton("⬅️", callback_data="ln_%s" % str((index - 1) % len)))
+
+    button_list.append(InlineKeyboardButton("ok", callback_data="ls_%s" % str((index))))
+
+    if len > 1:
+        button_list.append(InlineKeyboardButton("➡️", callback_data="ln_%s" % str((index + 1) % len)))
+
     return InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
 
 
-def main_menu(update):
+def main_menu():
     keyboard = [[InlineKeyboardButton("Add new subs",
                                       callback_data='search')],
                 [InlineKeyboardButton("My Library",
                                       callback_data='learn')],
+
+                ]
+    return InlineKeyboardMarkup(keyboard)
+
+
+def library_menu(index):
+    keyboard = [[InlineKeyboardButton("Get list of words",
+                                      callback_data='lm1_%s' % index)],
+                [InlineKeyboardButton("Get words one by one",
+                                      callback_data='lm2_%s' % index)],
+
                 ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -68,27 +90,27 @@ def build_menu(buttons,
 def get_learn_list(dic, index=0):
     k = 0
     out = ''
-    while (k <= 4 and index <= len(dic)-1):
+    while (k <= 4 and index <= len(dic) - 1):
         out = out + "%s) *%s* \n" % (str(index), str(dic[index][1]))
         k += 1
         index += 1
     return out
 
 
-def learn_navigate_markup(index, len, title):
+def learn_navigate_markup(dic ,index, len, title):
     logger.info("Learn navigate")
     button_list = []
     head = []
-    if (index - 4)<0:
+    if (index - 4) < 0:
         k = 0
     else:
-        k = index -4
-    head.append(InlineKeyboardButton(" 📋⬅️ ", callback_data="len_%s_%s" % (str(k),str(title))))
-    if index + 4 <= len-1:
-        head.append(InlineKeyboardButton("➡️  📋", callback_data="len_%s_%s" % (str(index + 4), title)))
+        k = index - 5
+    head.append(InlineKeyboardButton(" 📋⬅️ ", callback_data="len_%s_%s_" % (str(k), str(title))))
+    if index + 5 <= len - 1:
+        head.append(InlineKeyboardButton("➡️📋", callback_data="len_%s_%s_" % (str(index + 5), str(title))))
     k = 0
-    while (k <= 4 and index <= len-1):
-        button_list.append(InlineKeyboardButton("%s" % index, callback_data="les_%s_%s" % (index, str(title))))
+    while (k <= 4 and index <= len - 1):
+        button_list.append(InlineKeyboardButton("%s" % dic[index][1], callback_data="les_%s_%s_" % (index, str(title))))
         k += 1
         index += 1
 
@@ -96,13 +118,37 @@ def learn_navigate_markup(index, len, title):
     return InlineKeyboardMarkup(build_menu(button_list, n_cols=5, header_buttons=head, footer_buttons=finish))
 
 
-def learn_card(index, title):
+def learn_card(index, title, flag=""):
+    # TODO вывод предложения
+    button_list = [ ]
+    k = 2
+    button_list.append( InlineKeyboardButton("Get sentence with this word",
+                                             callback_data="sentence_%s_%s_%s" % (str(index), str(title), str(flag))))
+
+    if flag=="":
+        button_list.append(InlineKeyboardButton("Got it 👌", callback_data="learned_%s_" % (str(index))))
+        k+=1
+    logger.info("flag in learn card - %s" % flag)
+    go_back = [InlineKeyboardButton("⬅️ Go back",
+                                    callback_data="les_%s_%s_%s" % (str(index), str(title), str(flag)))]
+    return InlineKeyboardMarkup(build_menu(button_list, n_cols=k, footer_buttons=go_back))
+
+def go_back(index, title, flag=""):
+    go_back = [[InlineKeyboardButton("⬅️ Go back",
+                                    callback_data="len_%s_%s_%s" % (str(index), str(title), str(flag)))]]
+    return InlineKeyboardMarkup(go_back)
+
+def learn_navigate_markup_simple_version(index, len, title):
+    logger.info("Learn navigate (simple)")
     button_list = [
-        InlineKeyboardButton("Get sentence with this word", callback_data="sentence_%s" % str(index)), #TODO вывод предложения
-        InlineKeyboardButton("Got it 👌", callback_data="learn_%s" % (str(index)))
+        InlineKeyboardButton("don't know", callback_data="les_%s_%s_1" % (str(index), str(title))),
+        InlineKeyboardButton("already know", callback_data="learned_%s_%s" % (str(index), str(title)))
     ]
-    go_back = [InlineKeyboardButton("⬅️ Go back", callback_data="len_%s_%s" % (str(index), title))]
-    return InlineKeyboardMarkup(build_menu(button_list, n_cols=3, footer_buttons=go_back))
+    logger.info("index - %s, title - %s"%(index, title))
+    finish = [(InlineKeyboardButton("Finish ✅", callback_data="ln_%s" % str(title)))]
+    if (index + 1) == len:
+        return InlineKeyboardMarkup(finish)
+    return InlineKeyboardMarkup(build_menu(button_list, n_cols=2, footer_buttons=finish))
 
 
 def get_card(word):
@@ -126,6 +172,7 @@ def get_card(word):
 
 
 def get_study_card(card):
+    # TODO in urbandict add 'scr' column
     logger.info("get word card ")
     out = ""
     print(card)
@@ -151,5 +198,5 @@ def get_study_card(card):
             for y in x:
                 out += " - _%s - %s_ \n" % (str(y['text']), str(y['type']))
     if 'translation' in card:
-        out += "Translation - %s"% card['translation']
+        out += "Translation - %s" % card['translation']
     return out

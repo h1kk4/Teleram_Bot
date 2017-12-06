@@ -13,7 +13,8 @@ class Flags(object):
         self.id_series = ''
         self.flag_search = False
         self.words = {}
-        self.library={}
+        self.library = {}
+        self.titles = {}
         logger.info("init new flag")
 
     def set_flag_series(self, bool):
@@ -59,6 +60,13 @@ class Flags(object):
         self.library = {}
         self.words = {}
         logger.info("reset flag")
+
+    def set_titles(self, dic):
+        logger.info("set titles %s" % dic)
+        self.titles = dic
+
+    def get_titles(self):
+        return self.titles
 
     def reset_library(self):
         logger.info("library reset")

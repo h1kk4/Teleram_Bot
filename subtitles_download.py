@@ -27,8 +27,6 @@ def get_words_set(string):
     # decompressed_data.decode('cp1252').encode('utf-8')
     # return decompressed_data.decode('cp1252')
     subtitles = decompressed_data.decode('cp1252')
-    dic = {}
-    sentence = ""
     data = set()
     for x in ((subtitles.split('\r\n\r\n'))):
         if x.split('\n')[2:]:
@@ -37,4 +35,15 @@ def get_words_set(string):
             for label in labels:
                 data.add(label)
     return data
+
+def search_sentence(string, word):
+    str = base64.b64decode(string)
+    decompressed_data = zlib.decompress(str, 16 + zlib.MAX_WBITS)
+    subtitles = decompressed_data.decode('cp1252')
+    for x in ((subtitles.split('\r\n\r\n'))):
+        if x.split('\n')[2:]:
+            sentence = ''.join(x.split('\n')[2:])
+            labels = get_unknown_words(text=sentence)
+            if word in labels:
+                return sentence
 

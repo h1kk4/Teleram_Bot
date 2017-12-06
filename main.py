@@ -15,12 +15,14 @@ import zlib
 import ast
 from subtitles_download import *
 from db import DataBase
+
 # Enable logging
 logging.basicConfig(format="""%(asctime)s - %(name)s -
                         %(levelname)s - %(message)s""",
                     level=logging.INFO)
 
 logger = logging.getLogger(__name__)
+
 
 class SubsBot:
     def __init__(self, Token):
@@ -35,7 +37,7 @@ class SubsBot:
 
     def menu(self, bot, update):
         logger.info("Menu")
-        reply_markup = main_menu(update)
+        reply_markup = main_menu()
         # reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard= True ,one_time_keyboard=True)
         update.message.reply_text('Please choose what you want to do:',
                                   reply_markup=reply_markup)
@@ -60,34 +62,12 @@ class SubsBot:
             flags[update.callback_query.message.chat_id].set_flag_search(False)
             postgre = DataBase()
             logger.info("%s" % postgre.AddFilmToLibrary(update.callback_query.message.chat_id, id))
-            self.download_subtitle_for_film(bot, update, id)
+            self.download_subtitles(bot, update, id)
         else:
             logger.info("Series Method")
             self.ask_for_season_episode(bot, id, update)
 
-    def download_subtitle_for_film(self, bot, update, id):
-
-        #TODO Здеь не добавляются сабы в бд
-        logger.info("Download method OpenSubtitles token %s" % OPExample.login())
-        postgre = DataBase()
-        if postgre.CheckSubtitlesLibrary(id):
-            IDSubtitleFile = self.search_subs_on_opensubtitles(id)
-            if IDSubtitleFile == '':
-                print(update)
-                bot.send_message(text="Sorry, I can't find any subtitles",
-                                 chat_id=update.callback_query.message.chat_id)
-
-            FileData = (OPExample.download_subtitles([IDSubtitleFile]))
-            data = get_words_set(FileData['data'][0]['data'])
-            self.add_words_to_db(id, data)
-        else:
-            logger.info("subtitles for this title -%s already in library" % id)
-
-            bot.send_message(text="this title is already in your library",
-                             chat_id=update.callback_query.message.chat_id)
-        OPExample.logout()
-
-    def download_subtitle_for_series(self, bot, update, id):
+    def download_subtitles(self, bot, update, id):
         logger.info("Download method OpenSubtitles token %s" % OPExample.login())
         postgre = DataBase()
         if postgre.CheckSubtitlesLibrary(id):
@@ -96,27 +76,43 @@ class SubsBot:
                 print(update)
                 bot.send_message(text="Sorry, I can't find any subtitles",
                                  chat_id=update.message.chat_id)
-                return
+                return OPExample.logout()
 
             FileData = (OPExample.download_subtitles([IDSubtitleFile]))
             data = get_words_set(FileData['data'][0]['data'])
-            self.add_words_to_db(id,data)
+            self.add_words_to_db(id, data)
+            self.add_subtitle_to_db(imdb_id=id, subtitle_id=IDSubtitleFile)
         else:
-            logger.info("subtitles for this title -%s already in library" % id)
+            logger.info("subtitles for title -%s already in library" % id)
+        bot.send_message(text="To start learn, open /menu and go to your library",
+                         chat_id=update.message.chat_id)
 
-            bot.send_message(text="this title is already in your library",
-                             chat_id=update.callback_query.message.chat_id)
         OPExample.logout()
 
+    def get_sentence(self, word, imdb_id):
+        logger.info("Getting sentence, OpenSubtitles token %s" % OPExample.login())
+        postgre = DataBase()
+        subtitle_id = postgre.GetSubtitleID(imdb_id)
+        FileData = (OPExample.download_subtitles([subtitle_id]))
+        data = search_sentence(FileData['data'][0]['data'], word)
+        OPExample.logout()
+        if data:
+            return data
+        else:
+            return None
 
     def add_words_to_db(self, imdb_id, data):
         logger.info("adding words to database")
         postgre = DataBase()
         for label in data:
-            postgre.AddWordsToLibrary(imdb_id = imdb_id, word= label)
+            postgre.AddWordsToLibrary(imdb_id=imdb_id, word=label)
+
+    def add_subtitle_to_db(self, imdb_id, subtitle_id):
+        logger.info("adding imdb_id - %s subtitle_id - %s to database" % (imdb_id, subtitle_id))
+        postgre = DataBase()
+        postgre.AddSubtitleToLibrary(subtitle_id=subtitle_id, imdb_id=imdb_id)
 
     def search_subs_on_opensubtitles(self, id):
-
         request_data = [{"sublanguageid": 'eng', 'imdbid': id}]
         idSubtitleFile = OPExample.search_subtitles(request_data)
         found_id = ''
@@ -143,10 +139,10 @@ class SubsBot:
 
     def search_title_or_episode(self, bot, update):
 
-        #TODO Сделать поиск по двум апишкам более элегантым
+        # TODO Сделать поиск по двум апишкам более элегантым
 
-        if not flags:
-            bot.send_message(chat_id=update.message.chat_id, text="Send /help to get instructions")
+        if update.message.chat_id not in flags:
+            self.help(bot, update)
             return
 
         logger.info("Search for %s" % update.message.text)
@@ -177,14 +173,14 @@ class SubsBot:
                     id_of_series = data.imdb_id
                 else:
                     bot.send_message(text="Sorry, I can't find any subtitles",
-                                 chat_id=update.message.chat_id)
+                                     chat_id=update.message.chat_id)
                     return
             logger.info("Id of episode of %s%s" % (title, id_of_series))
 
             bot.send_message(chat_id=update.message.chat_id, text="http://imdb.com/title/%s" % id_of_series)
             postgre = DataBase()
             logger.info("%s" % postgre.AddFilmToLibrary(update.message.chat_id, id_of_series[2:]))
-            self.download_subtitle_for_series(bot, update, id_of_series[2:])
+            self.download_subtitles(bot, update, id_of_series[2:])
 
         #
         # Searching for name of the title
@@ -202,21 +198,19 @@ class SubsBot:
                     logger.info("Opensubtitles")
                     dic[i] = [self.what_run(label['title']), label['id']]
                     i += 1
-                    if (i == 3):
-                        logger.info("Dic to send %s" % dic)
 
-                        reply_markup = get_navigate_markup(dic)
-                        render_navigate_markup(reply_markup, dic, update)
-                        break
+                reply_markup = get_navigate_markup(len(dic))
+                render_navigate_markup(reply_markup, dic, update)
+                flags[update.message.chat_id].set_titles(dic)
 
-            elif(OMDBExample.search_film(update.message.text)):
+            elif (OMDBExample.search_film(update.message.text)):
                 logger.info("OMDB")
                 label = OMDBExample.search_film(update.message.text)
-                dic[0] = [label['type'],label['imdb_id']]
-                logger.info("Dic to send %s" % dic)
+                dic[0] = [label['type'], label['imdb_id']]
 
-                reply_markup = get_navigate_markup(dic)
+                reply_markup = get_navigate_markup(len(dic))
                 render_navigate_markup(reply_markup, dic, update)
+                flags[update.message.chat_id].set_titles(dic)
 
             else:
                 bot.send_message(chat_id=update.message.chat_id, text="I can't find this title")
@@ -235,11 +229,11 @@ class SubsBot:
 
     def button(self, bot, update):
 
-
-        #TODO Для каждой клавиши по функции
+        # TODO Для каждой клавиши по функции
 
 
         logger.info("Method button")
+
         query = update.callback_query
         chat_id = query.message.chat_id
         #
@@ -273,8 +267,8 @@ class SubsBot:
         #
         #
         if ((query.data.split('_')[0]) == 's'):
-            data = dict(ast.literal_eval(query.data.split('_')[1]))
-            index = int(query.data.split('_')[2])
+            data = data = flags[chat_id].get_titles()
+            index = int(query.data.split('_')[1])
             logger.info("select button index %s, flag %s, title %s" % (index, data[index][0], data[index][1]))
             self.SearchSubsMethod(bot, update, data[index][0], data[index][1])
 
@@ -284,45 +278,85 @@ class SubsBot:
         if ((query.data.split('_')[0]) == 'n'):
             # Chosen navigation button in searching
 
-            data = dict(ast.literal_eval(query.data.split('_')[1]))
-            index = int(query.data.split('_')[2])
+            data = flags[chat_id].get_titles()
+            index = int(query.data.split('_')[1])
             logger.info("index %s, flag %s, title %s" % (index, data[index][0], data[index][1]))
-            reply_markup = get_navigate_markup(data, index)
+            reply_markup = get_navigate_markup(len(data), index)
             bot.edit_message_text(text="http://imdb.com/title/tt%s" % data[index][1],
                                   reply_markup=reply_markup,
                                   chat_id=chat_id,
                                   message_id=query.message.message_id)
             logger.info("navigate in searching")
 
-
         if ((query.data.split('_')[0]) == 'ls'):
             # Chosen title to learn from user library
 
-            index = int(query.data.split("_")[1])
+            index = int(query.data.split("_")[1])  # index in dic of users library
             dic = flags[chat_id].get_library()
-            title = dic[index][1]
+            title = dic[index][1]  # title - imdb_id of film/series
+            logger.info("index %s title %s" % (index, dic[index][1]))
+
+            reply_markup = library_menu(index)
+            bot.edit_message_text(text="Chose how you want to learn words",
+                                  reply_markup=reply_markup,
+                                  chat_id=chat_id,
+                                  message_id=query.message.message_id)
+
+            # postgre = DataBase()
+            # flags[chat_id].set_words(postgre.GetWordsForTitle(chat_id, title))
+            #
+            # words = flags[chat_id].get_words()
+            # reply_markup = learn_navigate_markup(0, len(words), index)
+            # bot.edit_message_text(text= get_learn_list(words),
+            #                       reply_markup=reply_markup,
+            #                       chat_id=chat_id,
+            #                       message_id=query.message.message_id,
+            #                       parse_mode=ParseMode.MARKDOWN)
+
+            logger.info(("User selected title - %s to learn") % title)
+
+        if ((query.data.split('_')[0]) == "lm1"):
+            index = int(query.data.split("_")[1])  # index in dic of users library
+            dic = flags[chat_id].get_library()
+            title = dic[index][1]  # title - imdb_id of film/series
             logger.info("index %s title %s" % (index, dic[index][1]))
 
             postgre = DataBase()
             flags[chat_id].set_words(postgre.GetWordsForTitle(chat_id, title))
 
             words = flags[chat_id].get_words()
-            reply_markup = learn_navigate_markup(0, len(words), index)
-            bot.edit_message_text(text= get_learn_list(words),
+            reply_markup = learn_navigate_markup(words, 0, len(words), index)
+            bot.edit_message_text(text=get_learn_list(words),
                                   reply_markup=reply_markup,
                                   chat_id=chat_id,
                                   message_id=query.message.message_id,
                                   parse_mode=ParseMode.MARKDOWN)
 
-            logger.info(("User selected title - %s to learn")%title)
+        if ((query.data.split('_')[0]) == "lm2"):
+            index = int(query.data.split("_")[1])  # index in dic of users library
+            dic = flags[chat_id].get_library()
+            title = dic[index][1]  # title - imdb_id of film/series
+            logger.info("index %s title %s" % (index, dic[index][1]))
+
+            postgre = DataBase()
+            flags[chat_id].set_words(postgre.GetWordsForTitle(chat_id, title))
+
+            words = flags[chat_id].get_words()
+            reply_markup = learn_navigate_markup_simple_version(0, len(words), index)
+
+            bot.edit_message_text(text=words[0][1],
+                                  reply_markup=reply_markup,
+                                  chat_id=chat_id,
+                                  message_id=query.message.message_id,
+                                  parse_mode=ParseMode.MARKDOWN)
 
         if ((query.data.split('_')[0]) == 'ln'):
             # Chosen navigation button in library
 
             index = int(query.data.split("_")[1])
-            print("dic  - %s"%index)
+            print("dic  - %s" % index)
             dic = flags[chat_id].get_library()
-            print("dic - ",dic[index][1])
+            print("dic - ", dic[index][1])
             logger.info("index %s title %s" % (index, dic[index][1]))
 
             reply_markup = library_navigate_markup(len(dic), index)
@@ -337,16 +371,21 @@ class SubsBot:
 
             index = int(query.data.split("_")[1])
             title = int(query.data.split("_")[2])
-            logger.info("next card on learning ")
             words = flags[chat_id].get_words()
             logger.info("index %s word %s" % (index, words[index][1]))
 
-            reply_markup = learn_navigate_markup(index, len(words) , title)
-            bot.edit_message_text(text=get_learn_list(words, index),
+            if (query.data.split("_")[3] == ""):
+                reply_markup = learn_navigate_markup(words, index, len(words), title)
+                text_out = get_learn_list(words, index)
+            else:
+                reply_markup = learn_navigate_markup_simple_version(index, len(words), title)
+                text_out = words[index][1]
+            bot.edit_message_text(text=text_out,
                                   reply_markup=reply_markup,
                                   chat_id=chat_id,
                                   message_id=query.message.message_id,
-                                  parse_mode=ParseMode.MARKDOWN)
+                                  parse_mode=ParseMode.MARKDOWN
+                                  )
             logger.info("navigate in learning")
 
         if ((query.data.split('_')[0]) == 'les'):
@@ -354,30 +393,58 @@ class SubsBot:
 
             index = int(query.data.split("_")[1])
             title = int(query.data.split("_")[2])
+            flag = query.data.split("_")[3]
             dic = flags[chat_id].get_words()
-            logger.info("Word to learn - %s" %dic[index][1])
+            logger.info("Word to learn - %s" % dic[index][1])
             card = get_card(dic[index][1])
-            print("card - ",card)
-            reply_markup = learn_card(index, title)
-            bot.edit_message_text(text= get_study_card(card),
+            print("card - ", card)
+            if flag == "1":
+                reply_markup = learn_card(index, title, '1')
+            else:
+                reply_markup = learn_card(index, title)
+            bot.edit_message_text(text=get_study_card(card),
                                   reply_markup=reply_markup,
                                   chat_id=chat_id,
                                   message_id=query.message.message_id,
                                   parse_mode=ParseMode.MARKDOWN)
 
-
-        if (query.data.split('_')[0]=='learn'):
+        if (query.data.split('_')[0] == 'learned'):
             # User said that he know this word
             index = int(query.data.split("_")[1])
             word = flags[chat_id].get_words()
-            logger.info("Learned word is-%s"%word[index][1])
+            logger.info("Learned word is-%s" % word[index][1])
             postgre = DataBase()
             postgre.LearnWord(word[index][0], chat_id)
+            if (query.data.split("_")[2] != ""):
+                logger.info("learned word and get another")
+                words = flags[chat_id].get_words()
+                title = query.data.split("_")[2]
+                index += 1
+                reply_markup = learn_navigate_markup_simple_version(index, len(words), title)
+                bot.edit_message_text(text=words[index][1],
+                                      reply_markup=reply_markup,
+                                      chat_id=chat_id,
+                                      message_id=query.message.message_id,
+                                      parse_mode=ParseMode.MARKDOWN)
+
+        if ((query.data.split('_')[0]) == "sentence"):
+            index = int(query.data.split("_")[1])  # index of word
+            title = int(query.data.split("_")[2])  # title
+            flag = query.data.split("_")[3]
+            words = flags[chat_id].get_words()
+            dic = flags[chat_id].get_library()
+            text_out = str(self.get_sentence(words[index][1], dic[title][1]))
+            logger.info("Sentence %s"%text_out)
+            reply_markup = go_back(index, title, flag)
+            bot.edit_message_text(text=text_out,
+                                  reply_markup=reply_markup,
+                                  chat_id=chat_id,
+                                  message_id=query.message.message_id)
+            logger.info("word %s in title %s" % (words[index][1], dic[title][1]))
+
         return logger.info("done button method")
 
-
-
-    def error(self,update, error):
+    def error(self, update, error):
         logger.warn('Update "%s" caused error "%s"' % (update, error))
 
     def AddHandler(self):

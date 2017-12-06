@@ -75,7 +75,7 @@ class DataBase:
         )
         res = self.cur.fetchall()
         if len(res) != 0:
-            print("res",res)
+            print("res", res)
             return res[0][0]
         else:
             return (self.AddToIDList(word))
@@ -84,7 +84,7 @@ class DataBase:
         self.cur.execute(
             """SELECT max(id) FROM words"""
         )
-        curr_id = (self.cur.fetchall())[0][0]+1
+        curr_id = (self.cur.fetchall())[0][0] + 1
 
         self.cur.execute(
             """INSERT INTO words (id, word) VALUES (%s,%s);""",
@@ -141,3 +141,25 @@ class DataBase:
             i += 1
         print("it's dic of library", dic)
         return dic
+
+    def AddSubtitleToLibrary(self, subtitle_id, imdb_id):
+        f = self.GetSubtitleID(imdb_id)
+        if not f:
+            self.cur.execute(
+                """INSERT INTO subtitle_imdb (subtitle_id, imdb_id)
+                    VALUES (%s, %s);""",
+                (subtitle_id, imdb_id)
+            )
+            self.conn.commit()
+
+    def GetSubtitleID(self, imdb_id):
+        self.cur.execute(
+            """SELECT subtitle_id FROM subtitle_imdb WHERE imdb_id=\'{}\'
+            """.format(imdb_id)
+        )
+        res = self.cur.fetchall()
+        if len(res) != 0:
+            return res[0][0]
+        else:
+            return None
+
