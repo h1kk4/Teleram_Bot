@@ -10,7 +10,6 @@ YATRANSLATE_LANG = 'en-ru'
 
 
 def get_card(word):
-
     response = requests.get(
         YADICT_URL,
         params={
@@ -26,11 +25,9 @@ def get_card(word):
     card = {
         'word': word,
         'syn': [],
-        'src':'yadict'
+        'src': 'yadict'
 
     }
-
-
 
     for definition in res['def']:
 
@@ -49,7 +46,6 @@ def get_card(word):
 
 
 def get_transcription(word):
-
     try:
         response = requests.get(
             YADICT_URL,
@@ -68,7 +64,6 @@ def get_transcription(word):
 
 
 def get_translations(word):
-
     try:
         response = requests.get(
             YATRANSLATE_URL,

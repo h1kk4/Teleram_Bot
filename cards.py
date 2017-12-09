@@ -38,7 +38,7 @@ def get_navigate_markup(len, index=0):
 
 
 def library_navigate_markup(len, index=0):
-    button_list = [ ]
+    button_list = []
     if len > 1:
         button_list.append(InlineKeyboardButton("⬅️", callback_data="ln_%s" % str((index - 1) % len)))
 
@@ -91,26 +91,32 @@ def get_learn_list(dic, index=0):
     k = 0
     out = ''
     while (k <= 4 and index <= len(dic) - 1):
-        out = out + "%s) *%s* \n" % (str(index), str(dic[index][1]))
+        out = out + "%s) *%s* \n" % (str(index + 1), str(dic[index][1]))
         k += 1
         index += 1
     return out
 
 
-def learn_navigate_markup(dic ,index, len, title):
+def learn_navigate_markup(dic, index, len, title):
     logger.info("Learn navigate")
     button_list = []
     head = []
-    if (index - 4) < 0:
+
+    #TODO есть ошибка при переключении слов, не могу вернуться назад
+    if (index - 5) < 0:
         k = 0
     else:
         k = index - 5
-    head.append(InlineKeyboardButton(" 📋⬅️ ", callback_data="len_%s_%s_" % (str(k), str(title))))
+
+    if (index != 0):
+        head.append(InlineKeyboardButton(" 📋⬅️ ", callback_data="len_%s_%s_" % (str(k), str(title))))
+
     if index + 5 <= len - 1:
         head.append(InlineKeyboardButton("➡️📋", callback_data="len_%s_%s_" % (str(index + 5), str(title))))
     k = 0
     while (k <= 4 and index <= len - 1):
-        button_list.append(InlineKeyboardButton("%s" % dic[index][1], callback_data="les_%s_%s_" % (index, str(title))))
+        button_list.append(
+            InlineKeyboardButton("%s" % dic[index][1], callback_data="les_%s_%s_" % (str(index), str(title))))
         k += 1
         index += 1
 
@@ -120,31 +126,35 @@ def learn_navigate_markup(dic ,index, len, title):
 
 def learn_card(index, title, flag=""):
     # TODO вывод предложения
-    button_list = [ ]
+    button_list = []
     k = 2
-    button_list.append( InlineKeyboardButton("Get sentence with this word",
-                                             callback_data="sentence_%s_%s_%s" % (str(index), str(title), str(flag))))
+    print("learn card title", title)
+    button_list.append(InlineKeyboardButton("Get sentence with this word",
+                                            callback_data="sentence_%s_%s_%s" % (str(index), str(title), str(flag))))
 
-    if flag=="":
-        button_list.append(InlineKeyboardButton("Got it 👌", callback_data="learned_%s_" % (str(index))))
-        k+=1
+    if flag == "":
+        button_list.append(InlineKeyboardButton("Got it 👌",
+                                                callback_data="learned_%s_%s_%s" % (str(index), str(title), str(flag))))
+        k += 1
     logger.info("flag in learn card - %s" % flag)
     go_back = [InlineKeyboardButton("⬅️ Go back",
-                                    callback_data="les_%s_%s_%s" % (str(index), str(title), str(flag)))]
+                                    callback_data="len_%s_%s_%s" % (str(index), str(title), str(flag)))]
     return InlineKeyboardMarkup(build_menu(button_list, n_cols=k, footer_buttons=go_back))
+
 
 def go_back(index, title, flag=""):
     go_back = [[InlineKeyboardButton("⬅️ Go back",
-                                    callback_data="len_%s_%s_%s" % (str(index), str(title), str(flag)))]]
+                                     callback_data="len_%s_%s_%s" % (str(index), str(title), str(flag)))]]
     return InlineKeyboardMarkup(go_back)
+
 
 def learn_navigate_markup_simple_version(index, len, title):
     logger.info("Learn navigate (simple)")
     button_list = [
         InlineKeyboardButton("don't know", callback_data="les_%s_%s_1" % (str(index), str(title))),
-        InlineKeyboardButton("already know", callback_data="learned_%s_%s" % (str(index), str(title)))
+        InlineKeyboardButton("already know", callback_data="learned_%s_%s_1" % (str(index), str(title)))
     ]
-    logger.info("index - %s, title - %s"%(index, title))
+    logger.info("index - %s, title - %s" % (index, title))
     finish = [(InlineKeyboardButton("Finish ✅", callback_data="ln_%s" % str(title)))]
     if (index + 1) == len:
         return InlineKeyboardMarkup(finish)
@@ -172,7 +182,6 @@ def get_card(word):
 
 
 def get_study_card(card):
-    # TODO in urbandict add 'scr' column
     logger.info("get word card ")
     out = ""
     print(card)

@@ -126,7 +126,6 @@ class DataBase:
         for label in self.cur.fetchall():
             dic[i] = label
             i += 1
-        print("it's dic of words", dic)
         return dic
 
     def GetUserLibrary(self, user_id):
@@ -139,7 +138,6 @@ class DataBase:
         for label in self.cur.fetchall():
             dic[i] = label
             i += 1
-        print("it's dic of library", dic)
         return dic
 
     def AddSubtitleToLibrary(self, subtitle_id, imdb_id):
