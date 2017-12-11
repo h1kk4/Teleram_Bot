@@ -7,7 +7,11 @@ class Settings(object):
 
     FunctionsTxt = "Functions"
 
-    HelpTxt = "help"
+    HelpTxt = "Hi!\n" \
+              "This Bot help's you to learn new english words.\n" \
+              "Send me /menu to start.\n" \
+              'Tap on "Add new subs" to add new title to you library.\n' \
+              'Tap on "My Library" to chose title and start learn words.'
 
     telegram_token = "443853738:AAFqfCt74WeSS7ea75Sc2mpEbGAuZacdaiI"
 

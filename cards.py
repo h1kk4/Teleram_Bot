@@ -3,6 +3,7 @@ import logging
 import yadict
 import wordsapi
 import urbandict
+from db import DataBase
 
 logging.basicConfig(format="""%(asctime)s - %(name)s -
                         %(levelname)s - %(message)s""",
@@ -47,7 +48,9 @@ def library_navigate_markup(len, index=0):
     if len > 1:
         button_list.append(InlineKeyboardButton("➡️", callback_data="ln_%s" % str((index + 1) % len)))
 
-    return InlineKeyboardMarkup(build_menu(button_list, n_cols=3))
+    delete = [(InlineKeyboardButton("delete from library", callback_data="delete_%s" % str(index)))]
+
+    return InlineKeyboardMarkup(build_menu(button_list, n_cols=3, footer_buttons=delete))
 
 
 def main_menu():
@@ -102,17 +105,17 @@ def learn_navigate_markup(dic, index, len, title):
     button_list = []
     head = []
 
-    #TODO есть ошибка при переключении слов, не могу вернуться назад
+    # TODO есть ошибка при переключении слов, не могу вернуться назад
     if (index - 5) < 0:
         k = 0
     else:
         k = index - 5
 
     if (index != 0):
-        head.append(InlineKeyboardButton(" 📋⬅️ ", callback_data="len_%s_%s_" % (str(k), str(title))))
+        head.append(InlineKeyboardButton(" 📋⬅️ ", callback_data="len_%s_%s_0_0" % (str(k), str(title))))
 
     if index + 5 <= len - 1:
-        head.append(InlineKeyboardButton("➡️📋", callback_data="len_%s_%s_" % (str(index + 5), str(title))))
+        head.append(InlineKeyboardButton("➡️📋", callback_data="len_%s_%s_0_0" % (str(index + 5), str(title))))
     k = 0
     while (k <= 4 and index <= len - 1):
         button_list.append(
@@ -120,51 +123,58 @@ def learn_navigate_markup(dic, index, len, title):
         k += 1
         index += 1
 
-    finish = [(InlineKeyboardButton("Finish ✅", callback_data="ln_%s" % str(title)))]
+    finish = [(InlineKeyboardButton("Finish ✅", callback_data="finish"))]
     return InlineKeyboardMarkup(build_menu(button_list, n_cols=5, header_buttons=head, footer_buttons=finish))
 
 
-def learn_card(index, title, flag=""):
-    # TODO вывод предложения
+def learn_card(index, title, flag):
     button_list = []
-    k = 2
-    print("learn card title", title)
+    print("learn card title - %s \n current flag - %s" % (title, flag))
     button_list.append(InlineKeyboardButton("Get sentence with this word",
                                             callback_data="sentence_%s_%s_%s" % (str(index), str(title), str(flag))))
 
-    if flag == "":
-        button_list.append(InlineKeyboardButton("Got it 👌",
-                                                callback_data="learned_%s_%s_%s" % (str(index), str(title), str(flag))))
-        k += 1
+    button_list.append(InlineKeyboardButton("Got it 👌",
+                                            callback_data="learned_%s_%s_%s" % (str(index), str(title), str(flag))))
     logger.info("flag in learn card - %s" % flag)
     go_back = [InlineKeyboardButton("⬅️ Go back",
-                                    callback_data="len_%s_%s_%s" % (str(index), str(title), str(flag)))]
-    return InlineKeyboardMarkup(build_menu(button_list, n_cols=k, footer_buttons=go_back))
+                                    callback_data="len_%s_%s_%s_1" % (str(index), str(title), str(flag)))]
+    return InlineKeyboardMarkup(build_menu(button_list, n_cols=3, footer_buttons=go_back))
 
 
-def go_back(index, title, flag=""):
+def sentence_card(index, title, flag):
     go_back = [[InlineKeyboardButton("⬅️ Go back",
-                                     callback_data="len_%s_%s_%s" % (str(index), str(title), str(flag)))]]
+                                     callback_data="les_%s_%s_%s" % (str(index), str(title), str(flag)))]]
     return InlineKeyboardMarkup(go_back)
 
 
 def learn_navigate_markup_simple_version(index, len, title):
     logger.info("Learn navigate (simple)")
+    k = 2
     button_list = [
         InlineKeyboardButton("don't know", callback_data="les_%s_%s_1" % (str(index), str(title))),
         InlineKeyboardButton("already know", callback_data="learned_%s_%s_1" % (str(index), str(title)))
+
     ]
+    if len > 1:
+        button_list.append(InlineKeyboardButton("next word",
+                                                callback_data="len_%s_%s_1_0" % (str((index + 1) % len), str(title))))
+        k += 1
     logger.info("index - %s, title - %s" % (index, title))
-    finish = [(InlineKeyboardButton("Finish ✅", callback_data="ln_%s" % str(title)))]
+    finish = [(InlineKeyboardButton("Finish ✅", callback_data="finish"))]
     if (index + 1) == len:
         return InlineKeyboardMarkup(finish)
-    return InlineKeyboardMarkup(build_menu(button_list, n_cols=2, footer_buttons=finish))
+    return InlineKeyboardMarkup(build_menu(button_list, n_cols=k, footer_buttons=finish))
 
 
 def get_card(word):
+    # todo if nothing find add message about it
     logger.info("creating word card")
+    postgre = DataBase()
+    if (postgre.GetDefinition(word) != None):
+        logger.info("%s - already in database" % word)
+        return eval(postgre.GetDefinition(word))
+    logger.info("adding information about '%s' to database" % word)
     card = wordsapi.get_cards(word)
-    print("card wordsapi", card)
     if not card:
         card = yadict.get_card(word)
     if not card:
@@ -177,6 +187,7 @@ def get_card(word):
 
         card["translation"] = yadict.get_translations(word)
         print(yadict.get_translations(word))
+        postgre.AddDefinition(word, str(card))
         return card
     return None
 

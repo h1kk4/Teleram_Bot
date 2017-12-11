@@ -140,13 +140,13 @@ class DataBase:
             i += 1
         return dic
 
-    def AddSubtitleToLibrary(self, subtitle_id, imdb_id):
+    def AddSubtitleToLibrary(self, subtitle_id, imdb_id, episode, season):
         f = self.GetSubtitleID(imdb_id)
         if not f:
             self.cur.execute(
-                """INSERT INTO subtitle_imdb (subtitle_id, imdb_id)
-                    VALUES (%s, %s);""",
-                (subtitle_id, imdb_id)
+                """INSERT INTO subtitle_imdb (subtitle_id, imdb_id, season, episode)
+                    VALUES (%s, %s, %s, %s);""",
+                (subtitle_id, imdb_id, season, episode)
             )
             self.conn.commit()
 
@@ -161,3 +161,44 @@ class DataBase:
         else:
             return None
 
+    def GetSeriesInfo(self, imdb_id):
+        self.cur.execute(
+            """SELECT season, episode FROM subtitle_imdb WHERE imdb_id=\'{}\'"""
+            .format(imdb_id)
+        )
+        res = self.cur.fetchall()
+        dic = {}
+        print(res)
+        if (res):
+            if res[0][0]!=None:
+                dic["season"] = res[0][0]
+                dic["episode"] = res[0][1]
+                return dic
+        else:
+            return None
+
+    def GetDefinition(self, word):
+        self.cur.execute(
+            """SELECT definition FROM words WHERE word=\'{}\'
+            """.format(word)
+        )
+        res = self.cur.fetchall()
+        if len(res) != 0:
+            return res[0][0]
+        else:
+            return None
+
+    def AddDefinition(self, word, definition):
+        self.cur.execute(
+            """UPDATE words SET definition = %s WHERE word = %s;""",
+            (definition, word)
+        )
+        self.conn.commit()
+
+    def DeleteFilmFromLibrary(self, user_id, imdb_id):
+        print(user_id, imdb_id)
+        self.cur.execute(
+            """DELETE FROM user_films WHERE chat_id=%s AND imdb_id=%s;""",
+            (user_id, imdb_id)
+        )
+        self.conn.commit()

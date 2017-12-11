@@ -38,7 +38,6 @@ class OMDB():
         episode = data.pop()[1:]
         season = data.pop()[1:]
         title = ''
-
         for label in data:
             title += ''.join([label, ' '])
         data1 = omdb.get(title=title, season=season, episode=episode)
@@ -46,3 +45,4 @@ class OMDB():
         logger.info("returned data %s" % (data1))
 
         return data1
+
