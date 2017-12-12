@@ -17,21 +17,23 @@ class OMDB():
 
     def get_title(self, params):
         data = omdb.imdbid("tt%s" % params)
-        return data.title
-
-    def search_film(self, title):
-        data = omdb.get(title = title)
-        dic = {}
-        if data:
-            if data.type == 'movie':
-                dic ['type'] = 0
-            else:
-                dic['type'] = 1
-            dic ['imdb_id']= data.imdb_id[2:]
-            return dic
+        if "title" in data:
+            return data.title
         else:
             return None
 
+    def search_film(self, title):
+        data = omdb.get(title=title)
+        dic = {}
+        if data:
+            if data.type == 'movie':
+                dic['type'] = 0
+            else:
+                dic['type'] = 1
+            dic['imdb_id'] = data.imdb_id[2:]
+            return dic
+        else:
+            return None
 
     def search_series(self, params):
         data = params.split()
@@ -45,4 +47,3 @@ class OMDB():
         logger.info("returned data %s" % (data1))
 
         return data1
-

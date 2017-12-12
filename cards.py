@@ -128,7 +128,6 @@ def learn_navigate_markup(dic, index, len, title):
 
 def learn_card(index, title, flag):
     button_list = []
-    print("learn card title - %s \n current flag - %s" % (title, flag))
     # button_list.append(InlineKeyboardButton("Get sentence with this word",
     #                                         callback_data="sentence_%s_%s_%s" % (str(index), str(title), str(flag))))
 
@@ -183,7 +182,6 @@ def get_card(word, imdb_id):
         if ts:
             card['ts'] = ts
         card["translation"] = yadict.get_translations(word)
-        print(yadict.get_translations(word))
         postgre.AddDefinition(word, str(card))
         if sentence:
             card['sentence'] = sentence
@@ -214,8 +212,6 @@ def get_sentence(word, imdb_id):
 def get_study_card(card):
     logger.info("get word card ")
     out = ""
-    print(card)
-
     if (card['src'] == 'wordsapi'):
         logger.info("yadict search")
         out += "*Word* - %s\n" % str(card['word'])

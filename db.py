@@ -75,7 +75,6 @@ class DataBase:
         )
         res = self.cur.fetchall()
         if len(res) != 0:
-            print("res", res)
             return res[0][0]
         else:
             return (self.AddToIDList(word))
@@ -164,13 +163,12 @@ class DataBase:
     def GetSeriesInfo(self, imdb_id):
         self.cur.execute(
             """SELECT season, episode FROM subtitle_imdb WHERE imdb_id=\'{}\'"""
-            .format(imdb_id)
+                .format(imdb_id)
         )
         res = self.cur.fetchall()
         dic = {}
-        print(res)
         if (res):
-            if res[0][0]!=None:
+            if res[0][0] != None:
                 dic["season"] = res[0][0]
                 dic["episode"] = res[0][1]
                 return dic
@@ -196,17 +194,14 @@ class DataBase:
         self.conn.commit()
 
     def DeleteFilmFromLibrary(self, user_id, imdb_id):
-        print(user_id, imdb_id)
         self.cur.execute(
             """DELETE FROM user_films WHERE chat_id=%s AND imdb_id=%s;""",
             (user_id, imdb_id)
         )
         self.conn.commit()
 
-
     def AddSentence(self, word, imdb_id, sentence):
-        word_id=self.GetWordID(word)
-        print(word, word_id, imdb_id, sentence)
+        word_id = self.GetWordID(word)
         self.cur.execute(
             """UPDATE subtitle_words SET sentence = %s WHERE word_id = %s AND imdb_id=%s;""",
             (sentence, word_id, imdb_id)
@@ -221,7 +216,6 @@ class DataBase:
         )
         res = self.cur.fetchall()
         if len(res) != 0:
-            print(res[0][0])
             return res[0][0]
         else:
             return None
