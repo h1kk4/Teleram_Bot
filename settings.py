@@ -5,7 +5,8 @@ class Settings(object):
     USER_NAME = 'h1kk4'
     USER_PASSWORD = 'pugajemas'
 
-    FunctionsTxt = "Functions"
+    EmptyLibraryTxt = "You have not added any movies yet.\n " \
+                      "Open /menu to add new titles."
 
     HelpTxt = "Hi!\n" \
               "This Bot help's you to learn new english words.\n" \
@@ -15,4 +16,7 @@ class Settings(object):
 
     telegram_token = "443853738:AAFqfCt74WeSS7ea75Sc2mpEbGAuZacdaiI"
 
-    apikey = "46e2cce"
+    OMDBapikey = "46e2cce"
+    YADICT_KEY = "dict.1.1.20171114T191912Z.e6cf7f858e4de103.cda2e4f4935c5f9adb77424a55be06f0cf533cd4"
+    YATRANSLATE_KEY = 'trnsl.1.1.20171014T220357Z.578d1703f2928529.8305107e8a6022f127dfb2a4fa177aeb5ae098cf'
+    MASHAPE_URBAN_KEY = 'y4ueGKZdPzmshLr6dheyPokoxvolp1vWfXQjsneXC1iVJBX4rQ'

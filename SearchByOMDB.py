@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 
 class OMDB():
     def __init__(self):
-        self.Client = omdb.Client(apikey=Settings.apikey)
-        omdb.set_default('apikey', Settings.apikey)
+        self.Client = omdb.Client(apikey=Settings.OMDBapikey)
+        omdb.set_default('apikey', Settings.OMDBapikey)
 
     def get_title(self, params):
         data = omdb.imdbid("tt%s" % params)

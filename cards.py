@@ -4,6 +4,8 @@ import yadict
 import wordsapi
 import urbandict
 from db import DataBase
+from opensubtitles import OpenSubtitles
+from subtitles_download import *
 
 logging.basicConfig(format="""%(asctime)s - %(name)s -
                         %(levelname)s - %(message)s""",
@@ -13,17 +15,13 @@ logger = logging.getLogger(__name__)
 
 
 def get_navigate_markup(len, index=0):
-    # if len(dic) > 1:
-    #     buttons.append(dict('←',
-    #                         callback_data='navigate_%s_%d' % (str_json, (index - 1) % len(dic))))
-
-    button_list = []
     k = 1
+    button_list = []
     if len > 1:
-        button_list.append(InlineKeyboardButton("⬅️", callback_data="n_%s" % str((index - 1) % len)))
+        button_list.append(InlineKeyboardButton("⬅️", callback_data="n_%s" % str((index - 1) % len)))  # navigate
         k += 1
 
-    button_list.append(InlineKeyboardButton("ok", callback_data="s_%s" % (str(index))), )
+    button_list.append(InlineKeyboardButton("ok", callback_data="s_%s" % (str(index))), )  # select
 
     if len > 1:
         button_list.append(InlineKeyboardButton("➡️", callback_data="n_%s" % str((index + 1) % len)))
@@ -31,19 +29,15 @@ def get_navigate_markup(len, index=0):
 
     return InlineKeyboardMarkup(build_menu(button_list, n_cols=k))
 
-    # buttons.append('ok',
-    #                     callback_data='select_%s_%d' % (dic, index % len(dic)))
-    # if len(dic) > 1:
-    #     buttons.append(dict('→',
-    #                         callback_data='navigate_%s_%d' % (str_json, (index + 1) % len(dic))))
-
 
 def library_navigate_markup(len, index=0):
     button_list = []
-    if len > 1:
-        button_list.append(InlineKeyboardButton("⬅️", callback_data="ln_%s" % str((index - 1) % len)))
 
-    button_list.append(InlineKeyboardButton("ok", callback_data="ls_%s" % str((index))))
+    if len > 1:
+        button_list.append(
+            InlineKeyboardButton("⬅️", callback_data="ln_%s" % str((index - 1) % len)))  # library_navigate
+
+    button_list.append(InlineKeyboardButton("ok", callback_data="ls_%s" % str((index))))  # library_select
 
     if len > 1:
         button_list.append(InlineKeyboardButton("➡️", callback_data="ln_%s" % str((index + 1) % len)))
@@ -63,11 +57,17 @@ def main_menu():
     return InlineKeyboardMarkup(keyboard)
 
 
+def Show_keyboard():
+    logger.info("Show KEYBOARD")
+    custom_keyboard = [['/menu'], ['/help']]
+    return ReplyKeyboardMarkup(custom_keyboard, one_time_keyboard=True)
+
+
 def library_menu(index):
     keyboard = [[InlineKeyboardButton("Get list of words",
-                                      callback_data='lm1_%s' % index)],
+                                      callback_data='lm1_%s' % index)],  # library menu 1
                 [InlineKeyboardButton("Get words one by one",
-                                      callback_data='lm2_%s' % index)],
+                                      callback_data='lm2_%s' % index)],  # library menu 2
 
                 ]
     return InlineKeyboardMarkup(keyboard)
@@ -105,7 +105,6 @@ def learn_navigate_markup(dic, index, len, title):
     button_list = []
     head = []
 
-    # TODO есть ошибка при переключении слов, не могу вернуться назад
     if (index - 5) < 0:
         k = 0
     else:
@@ -130,21 +129,15 @@ def learn_navigate_markup(dic, index, len, title):
 def learn_card(index, title, flag):
     button_list = []
     print("learn card title - %s \n current flag - %s" % (title, flag))
-    button_list.append(InlineKeyboardButton("Get sentence with this word",
-                                            callback_data="sentence_%s_%s_%s" % (str(index), str(title), str(flag))))
+    # button_list.append(InlineKeyboardButton("Get sentence with this word",
+    #                                         callback_data="sentence_%s_%s_%s" % (str(index), str(title), str(flag))))
 
     button_list.append(InlineKeyboardButton("Got it 👌",
-                                            callback_data="learned_%s_%s_%s" % (str(index), str(title), str(flag))))
+                                            callback_data="learned_%s_%s_%s_1" % (str(index), str(title), str(flag))))
     logger.info("flag in learn card - %s" % flag)
     go_back = [InlineKeyboardButton("⬅️ Go back",
                                     callback_data="len_%s_%s_%s_1" % (str(index), str(title), str(flag)))]
-    return InlineKeyboardMarkup(build_menu(button_list, n_cols=3, footer_buttons=go_back))
-
-
-def sentence_card(index, title, flag):
-    go_back = [[InlineKeyboardButton("⬅️ Go back",
-                                     callback_data="les_%s_%s_%s" % (str(index), str(title), str(flag)))]]
-    return InlineKeyboardMarkup(go_back)
+    return InlineKeyboardMarkup(build_menu(button_list, n_cols=2, footer_buttons=go_back))
 
 
 def learn_navigate_markup_simple_version(index, len, title):
@@ -152,7 +145,7 @@ def learn_navigate_markup_simple_version(index, len, title):
     k = 2
     button_list = [
         InlineKeyboardButton("don't know", callback_data="les_%s_%s_1" % (str(index), str(title))),
-        InlineKeyboardButton("already know", callback_data="learned_%s_%s_1" % (str(index), str(title)))
+        InlineKeyboardButton("already know", callback_data="learned_%s_%s_1_0" % (str(index), str(title)))
 
     ]
     if len > 1:
@@ -166,13 +159,16 @@ def learn_navigate_markup_simple_version(index, len, title):
     return InlineKeyboardMarkup(build_menu(button_list, n_cols=k, footer_buttons=finish))
 
 
-def get_card(word):
-    # todo if nothing find add message about it
+def get_card(word, imdb_id):
     logger.info("creating word card")
     postgre = DataBase()
     if (postgre.GetDefinition(word) != None):
         logger.info("%s - already in database" % word)
-        return eval(postgre.GetDefinition(word))
+        card = eval(postgre.GetDefinition(word))
+        sentence = get_sentence(word, imdb_id)
+        if sentence:
+            card['sentence'] = sentence
+        return card
     logger.info("adding information about '%s' to database" % word)
     card = wordsapi.get_cards(word)
     if not card:
@@ -182,41 +178,67 @@ def get_card(word):
 
     if card:
         ts = yadict.get_transcription(word)
+        sentence = get_sentence(word, imdb_id)
+
         if ts:
             card['ts'] = ts
-
         card["translation"] = yadict.get_translations(word)
         print(yadict.get_translations(word))
         postgre.AddDefinition(word, str(card))
+        if sentence:
+            card['sentence'] = sentence
+
         return card
     return None
+
+
+def get_sentence(word, imdb_id):
+    OP = OpenSubtitles()
+    logger.info("Getting sentence, OpenSubtitles token %s" % OP.login())
+    postgre = DataBase()
+    sentence = postgre.GetSentence(word, imdb_id)
+    if sentence:
+        return sentence
+    subtitle_id = postgre.GetSubtitleID(imdb_id)
+    logger.info("subtitle id - %s" % subtitle_id)
+    FileData = (OP.download_subtitles([subtitle_id]))
+    sentence = search_sentence(FileData['data'][0]['data'], word)
+    OP.logout()
+    if sentence:
+        postgre.AddSentence(word, imdb_id, sentence)
+        return sentence
+    else:
+        return None
 
 
 def get_study_card(card):
     logger.info("get word card ")
     out = ""
     print(card)
+
     if (card['src'] == 'wordsapi'):
         logger.info("yadict search")
-        out += "Word - *%s*\n" % str(card['word'])
-        out += "Transcription - %s\n" % str(card['pron'])
-        out += "Definitions :\n"
+        out += "*Word* - %s\n" % str(card['word'])
+        out += "*Transcription* - \[%s] \n" % str(card['pron'])
+        out += "*Definitions* :\n"
         for label in card['def']:
             out += " - _%s_\n" % str(label)
 
     elif (card['src'] == "yadict"):
         logger.info("yadict search")
-        out += "Word - *%s*\n" % str(card['word'])
+        out += "*Word* - \[%s]\n" % str(card['word'])
         if 'ts' in card:
-            out += "Transcription - %s\n" % str(card['ts'])
-        out += "Synonyms :\n"
+            out += "*Transcription* \[%s]   \n" % str(card['ts'])
+        out += "*Synonyms* :\n"
         for label in card['syn']:
             out += " - _%s_\n" % str(label)
     else:
-        out += "Word - *%s*\n" % str(card['word'])
+        out += "*Word* - \[%s]\n" % str(card['word'])
         for x in card['def']:
             for y in x:
                 out += " - _%s - %s_ \n" % (str(y['text']), str(y['type']))
     if 'translation' in card:
-        out += "Translation - %s" % card['translation']
+        out += "*Translation* - %s\n" % card['translation']
+    if 'sentence' in card:
+        out += "*Sentence with this word*\n - %s" % card['sentence']
     return out

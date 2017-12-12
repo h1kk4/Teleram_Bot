@@ -52,15 +52,6 @@ class Flags(object):
     def get_words(self):
         return self.words
 
-    def reset(self):
-        # TODO add resetting flags at the end of searching
-        self.flag_series = False
-        self.id_series = ''
-        self.flag_search = False
-        self.library = {}
-        self.words = {}
-        logger.info("reset flag")
-
     def set_titles(self, dic):
         logger.info("set titles %s" % dic)
         self.titles = dic

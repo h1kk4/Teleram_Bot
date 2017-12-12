@@ -202,3 +202,26 @@ class DataBase:
             (user_id, imdb_id)
         )
         self.conn.commit()
+
+
+    def AddSentence(self, word, imdb_id, sentence):
+        word_id=self.GetWordID(word)
+        print(word, word_id, imdb_id, sentence)
+        self.cur.execute(
+            """UPDATE subtitle_words SET sentence = %s WHERE word_id = %s AND imdb_id=%s;""",
+            (sentence, word_id, imdb_id)
+        )
+        self.conn.commit()
+
+    def GetSentence(self, word, imdb_id):
+        word_id = self.GetWordID(word)
+        self.cur.execute(
+            """SELECT sentence FROM subtitle_words WHERE word_id=%s AND imdb_id=%s;""",
+            (word_id, imdb_id)
+        )
+        res = self.cur.fetchall()
+        if len(res) != 0:
+            print(res[0][0])
+            return res[0][0]
+        else:
+            return None

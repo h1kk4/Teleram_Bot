@@ -8,6 +8,7 @@ logging.basicConfig(format="""%(asctime)s - %(name)s -
 
 logger = logging.getLogger(__name__)
 
+
 class OpenSubtitles(object):
     def __init__(self):
         self.xmlrpc = ServerProxy(Settings.OPENSUBTITLES_SERVER,
@@ -20,8 +21,6 @@ class OpenSubtitles(object):
         return self.data.get(key) if '200' == status else None
 
     def login(self):
-        '''Returns token is login is ok, otherwise None.
-        '''
         self.data = self.xmlrpc.LogIn(Settings.USER_NAME, Settings.USER_PASSWORD,
                                       self.language, Settings.USER_AGENT)
         token = self._get_from_data_or_none('token')
@@ -35,8 +34,6 @@ class OpenSubtitles(object):
         return '200' in data.get('status')
 
     def search_subtitles(self, params):
-        '''Returns a list with the subtitles info.
-        '''
         self.data = self.xmlrpc.SearchSubtitles(self.token, params)
         return self.data
 
