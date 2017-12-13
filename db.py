@@ -93,7 +93,11 @@ class DataBase:
         self.cur.execute(
             """SELECT max(id) FROM words"""
         )
-        curr_id = (self.cur.fetchall())[0][0] + 1
+        curr_id = (self.cur.fetchall())[0][0]
+        if (curr_id):
+            curr_id += 1
+        else:
+            curr_id = 1
 
         self.cur.execute(
             """INSERT INTO words (id, word) VALUES (%s,%s);""",
