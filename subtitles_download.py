@@ -1,7 +1,7 @@
 import zlib
 import base64
 from language_toolkit import *
-
+import re
 
 def get_words_set(string):
     str = base64.b64decode(string)
@@ -35,4 +35,4 @@ def search_sentence(string, word):
             labels = get_unknown_words(text=sentence)
             if word in labels:
                 print(sentence)
-                return sentence
+                return re.sub(r'<\w>|</\w>', "", sentence.replace('\r',''))
