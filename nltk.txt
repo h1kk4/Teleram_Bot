@@ -1,4 +1,5 @@
 data
-punkt
+download(‘punkt’)
+tokenizers
 WordNetLemmatizer
 SnowballStemmer
