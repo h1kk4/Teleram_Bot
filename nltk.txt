@@ -1,5 +1,4 @@
-data
-download(‘punkt’)
-tokenizers
-WordNetLemmatizer
-SnowballStemmer
+wordnet
+punkt
+english.pickle
+snowball_data
