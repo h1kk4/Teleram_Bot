@@ -3,20 +3,30 @@ from urllib import parse
 import psycopg2
 
 
-# parse.uses_netloc.append("postgres")
-# url = parse.urlparse(os.environ["DATABASE_URL"])
+parse.uses_netloc.append("postgres")
+url = parse.urlparse(os.environ["DATABASE_URL"])
 
 
 class DataBase:
+    # def __init__(self):
+    #     self.conn = psycopg2.connect(
+    #         dbname='db_for_bot',
+    #         user='alex'
+    #         # database=url.path[1:],
+    #         # user=url.username,
+    #         # password=url.password,
+    #         # host=url.hostname,
+    #         # port=url.port
+    #     )
+    #     self.cur = self.conn.cursor()
+
     def __init__(self):
         self.conn = psycopg2.connect(
-            dbname='db_for_bot',
-            user='alex'
-            # database=url.path[1:],
-            # user=url.username,
-            # password=url.password,
-            # host=url.hostname,
-            # port=url.port
+            database=url.path[1:],
+            user=url.username,
+            password=url.password,
+            host=url.hostname,
+            port=url.port
         )
         self.cur = self.conn.cursor()
 
@@ -83,7 +93,11 @@ class DataBase:
         self.cur.execute(
             """SELECT max(id) FROM words"""
         )
-        curr_id = (self.cur.fetchall())[0][0] + 1
+        curr_id = (self.cur.fetchall())[0][0]
+        if (curr_id):
+            curr_id += 1
+        else:
+            curr_id = 1
 
         self.cur.execute(
             """INSERT INTO words (id, word) VALUES (%s,%s);""",

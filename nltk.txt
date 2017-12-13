@@ -1,0 +1,4 @@
+wordnet
+punkt
+english.pickle
+snowball_data
