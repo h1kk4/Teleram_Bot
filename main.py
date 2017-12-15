@@ -200,10 +200,12 @@ class SubsBot:
         if movies != []:
             for item in movies:
                 dic[i] = [self.what_run(item['kind']),item.movieID ]
-                reply_markup = get_navigate_markup(len(dic))
-                render_navigate_markup(reply_markup, dic, update)
-                flags[update.message.chat_id].set_titles(dic)
-                return
+                i+=1
+
+            reply_markup = get_navigate_markup(len(dic))
+            render_navigate_markup(reply_markup, dic, update)
+            flags[update.message.chat_id].set_titles(dic)
+            return
 
         logger.info("OpenSubtitles token %s" % OPExample.login())
         labels = OPExample.search_movies_on_imdb(update.message.text)
