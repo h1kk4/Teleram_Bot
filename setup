@@ -1,0 +1,29 @@
+#!/bin/bash
+
+sudo apt-get update
+
+pip install python-telegram-bot --upgrade
+pip install omdb
+pip install requests
+pip install nltk
+pip install psycopg2
+pip3 install git+https://github.com/alberanid/imdbpy
+
+python3 download.py
+
+echo -e "import nltk \n
+nltk.download('punkt')" | python3 
+
+
+sudo apt-get install postgresql
+
+
+echo -e "CREATE DATABASE SubsBot;\n
+CREATE TABLE words (id integer PRIMARY KEY, word character varying(32) UNIQUE, definition text); \n 
+CREATE TABLE subtitle_words (imdb_id character varying(32) NOT NULL, word_id integer NOT NULL, sentence text); \n
+CREATE TABLE user_words (chat_id integer NOT NULL, word_id integer NOT NULL); \n
+CREATE TABLE subtitle_imdb (subtitle_id character varying(32) PRIMARY KEY, imdb_id character varying(32) UNIQUE, season integer, episode integer); \n
+CREATE TABLE user_films (chat_id integer NOT NULL, imdb_id character varying(32) NOT NULL);"
+| psql postgres
+
+
