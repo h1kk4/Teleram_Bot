@@ -196,7 +196,7 @@ class SubsBot:
 
         """"""
         ia = IMDb()
-        movies = ia.search_movie(update.message.text.split(" ", 1)[1])
+        movies = ia.search_movie(update.message.text)
         if movies != []:
             for item in movies:
                 dic[i] = [self.what_run(item['kind']),item.movieID ]
