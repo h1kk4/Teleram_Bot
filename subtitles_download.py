@@ -35,4 +35,4 @@ def search_sentence(string, word):
             labels = get_unknown_words(text=sentence)
             if word in labels:
                 print(sentence)
-                return re.sub(r'<\w>|</\w>', "", sentence.replace('\r',''))
+                return re.sub(r'<[^>]*>', "", sentence.replace('\r',''))
