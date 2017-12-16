@@ -12,13 +12,11 @@ sudo pip3 install git+https://github.com/alberanid/imdbpy
 
 echo -e "import nltk\nnltk.download('punkt')\nnltk.download('wordnet')" | python3 
 
-
 sudo apt-get install postgresql
 
-
 echo -e "CREATE USER $USER;
-CREATE DATABASE $USER;
-CREATE TABLE words (id integer PRIMARY KEY, word character varying(32) UNIQUE, definition text);
+CREATE DATABASE $USER;" | sudo -u postgres psql
+echo -e "CREATE TABLE words (id integer PRIMARY KEY, word character varying(32) UNIQUE, definition text);
 CREATE TABLE subtitle_words (imdb_id character varying(32) NOT NULL, word_id integer NOT NULL, sentence text);
 CREATE TABLE user_words (chat_id integer NOT NULL, word_id integer NOT NULL);
 CREATE TABLE subtitle_imdb (subtitle_id character varying(32) PRIMARY KEY, imdb_id character varying(32) UNIQUE, season integer, episode integer);
