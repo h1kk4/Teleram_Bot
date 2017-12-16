@@ -2,7 +2,7 @@ import re
 import requests
 from settings import Settings
 
-MASHAPE_URBAN_KEY = Settings.MASHAPE_URBAN_KEY
+MASHAPE_URBAN_KEY = Settings.MASHAPE_KEY
 MASHAPE_URBAN_URL = 'https://mashape-community-urban-dictionary.p.mashape.com/define'
 
 

@@ -1,6 +1,8 @@
 import requests
+from settings import Settings
 
-MASHAPE_WORDS_API_KEY = 'y4ueGKZdPzmshLr6dheyPokoxvolp1vWfXQjsneXC1iVJBX4rQ'
+
+MASHAPE_WORDS_API_KEY= Settings.MASHAPE_KEY
 MASHAPE_WORDS_API_URL = 'https://wordsapiv1.p.mashape.com/words/'
 
 
