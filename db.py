@@ -9,8 +9,6 @@ url = parse.urlparse(os.environ["DATABASE_URL"])
 
 
 class DataBase:
-
-
     def __init__(self):
         self.conn = psycopg2.connect(
             database=url.path[1:],
