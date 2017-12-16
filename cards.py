@@ -74,6 +74,7 @@ def library_menu(index):
 
 
 def render_navigate_markup(reply_markup, dic, update, index=0):
+
     update.message.reply_text("http://imdb.com/title/tt%s" % dic[index][1], reply_markup=reply_markup)
     logger.info("render_navigate_markup")
 

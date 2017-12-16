@@ -8,7 +8,7 @@ from settings import Settings
 from cards import *
 from subtitles_download import *
 from db import DataBase
-
+from imdb import IMDb
 # Enable logging
 logging.basicConfig(format="""%(asctime)s - %(name)s -
                         %(levelname)s - %(message)s""",
@@ -120,19 +120,23 @@ class SubsBot:
             self.help(bot, update)
             return
 
-        logger.info("Search for %s" % update.message.text)
+
 
         # Search for episode of the series
 
         if (flags[update.message.chat_id].get_flag_series() == True):
+            logger.info("Search for episode %s" % update.message.text)
             self.search_subtitles_for_episode(bot, update)
 
         # Searching for name of the titles (filling thw menu of titles)
 
-        if (flags[update.message.chat_id].get_flag_search() == True):
+        elif(flags[update.message.chat_id].get_flag_search() == True):
+            logger.info("Search for title %s" % update.message.text)
             self.titles_search(bot, update)
 
-        OPExample.logout()
+        else:
+            update.message.reply_text(Settings.NotInMenuTxt)
+
 
     def search_subtitles_for_episode(self, bot, update):
         flags[update.message.chat_id].set_flag_series(False)
@@ -169,7 +173,7 @@ class SubsBot:
                 bot.send_message(text="Sorry, I can't find any subtitles",
                                  chat_id=update.message.chat_id)
                 return
-
+        OPExample.logout()
         logger.info("Id of episode of %s%s" % (title, id_of_series))
 
         bot.send_message(chat_id=update.message.chat_id, text="http://imdb.com/title/%s" % id_of_series)
@@ -185,11 +189,27 @@ class SubsBot:
         OPExample.logout()
 
     def titles_search(self, bot, update):
-        logger.info("OpenSubtitles token %s" % OPExample.login())
-        labels = OPExample.search_movies_on_imdb(update.message.text)
+
         logger.info('Fill out the cards on request "%s"' % update.message.text)
         dic = {}
         i = 0
+
+        """"""
+        ia = IMDb()
+        movies = ia.search_movie(update.message.text)
+        if movies != []:
+            for item in movies:
+                dic[i] = [self.what_run(item['kind']),item.movieID ]
+                i+=1
+
+            reply_markup = get_navigate_markup(len(dic))
+            render_navigate_markup(reply_markup, dic, update)
+            flags[update.message.chat_id].set_titles(dic)
+            return
+
+        logger.info("OpenSubtitles token %s" % OPExample.login())
+        labels = OPExample.search_movies_on_imdb(update.message.text)
+
         if (labels['data'] != [[]]):
             for label in labels['data']:
                 if 'id' not in label:
