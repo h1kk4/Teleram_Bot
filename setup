@@ -16,7 +16,8 @@ echo -e "import nltk\nnltk.download('punkt')\nnltk.download('wordnet')" | python
 sudo apt-get install postgresql
 
 
-echo -e "CREATE DATABASE $USER;
+echo -e "CREATE USER $USER;
+CREATE DATABASE $USER;
 CREATE TABLE words (id integer PRIMARY KEY, word character varying(32) UNIQUE, definition text);
 CREATE TABLE subtitle_words (imdb_id character varying(32) NOT NULL, word_id integer NOT NULL, sentence text);
 CREATE TABLE user_words (chat_id integer NOT NULL, word_id integer NOT NULL);
