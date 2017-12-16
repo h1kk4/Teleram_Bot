@@ -3,7 +3,7 @@
 This Bot help's you to learn English. Just send several message and start to study.
 
 ```ShellSession
-$ To use this bot on your machine you need get tokens:
+To use this bot on your machine you need get tokens:
 ```
 ## Links
 
