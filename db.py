@@ -113,7 +113,7 @@ class DataBase:
                 WHERE uw.word_id IS NULL
             ) AS nuw
             LEFT JOIN words AS w
-            ON nuw.word_id = w.id;""", (imdb_id, user_id)
+            ON nuw.word_id = w.id ORDER BY w.id;""", (imdb_id, user_id)
                          )
         dic = {}
         i = 0
