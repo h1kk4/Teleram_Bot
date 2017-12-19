@@ -3,12 +3,7 @@
 sudo apt-get update
 sudo apt install python3-pip
 sudo apt install git
-sudo pip3 install python-telegram-bot
-sudo pip3 install omdb
-sudo pip3 install requests
-sudo pip3 install nltk
-sudo pip3 install psycopg2
-sudo pip3 install git+https://github.com/alberanid/imdbpy
+sudo pip3 install -r requirements.txt
 
 echo -e "import nltk\nnltk.download('punkt')\nnltk.download('wordnet')" | python3 
 
