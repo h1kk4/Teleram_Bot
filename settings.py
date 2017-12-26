@@ -19,13 +19,15 @@ Args:
     MASHAPE_KEY :obj:`str`: - стока с токеном для mashape
 
 """
+from os import environ
 
 class Settings(object):
-    OPENSUBTITLES_SERVER = ''
-    USER_AGENT = ''
-    LANGUAGE = ''
-    USER_NAME = ''
-    USER_PASSWORD = ''
+
+    OPENSUBTITLES_SERVER = ["OPENSUBTITLES_SERVER"]
+    USER_AGENT = ["USER_AGENT"]
+    LANGUAGE = ["LANGUAGE"]
+    USER_NAME = ["USER_NAME"]
+    USER_PASSWORD = environ["USER_PASSWORD"]
 
     EmptyLibraryTxt = "You have not added any movies yet.\n " \
                       "Open /menu to add new titles."
@@ -39,9 +41,9 @@ class Settings(object):
     NotInMenuTxt = "Ooops.\n" \
                    "You are not in menu. To search for titles just open /menu."
 
-    telegram_token = ""
+    telegram_token = environ["telegram_token"]
 
-    OMDBapikey = ""
-    YADICT_KEY = ""
-    YATRANSLATE_KEY = ""
-    MASHAPE_KEY = ""
+    OMDBapikey = environ["OMDBapikey"]
+    YADICT_KEY = environ["YADICT_KEY"]
+    YATRANSLATE_KEY = ["YATRANSLATE_KEY"]
+    MASHAPE_KEY = ["MASHAPE_KEY"]
