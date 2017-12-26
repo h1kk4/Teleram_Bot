@@ -1,3 +1,4 @@
+"""Этот модуль сожержит методы описывающие меню для взаимодействия с пользователем"""
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 import logging
 import yadict
@@ -7,6 +8,8 @@ from db import DataBase
 from opensubtitles import OpenSubtitles
 from subtitles_download import *
 
+from sphinx import ext
+
 logging.basicConfig(format="""%(asctime)s - %(name)s -
                         %(levelname)s - %(message)s""",
                     level=logging.INFO)
@@ -15,6 +18,14 @@ logger = logging.getLogger(__name__)
 
 
 def get_navigate_markup(len, index=0):
+    """
+    Отправляет меню для навигации при поиске
+    Args:
+        len (:obj:`int`): количество фильмов в поисковой выдаче
+        index (:obj:`int`, optional): текущий индекс
+    Returns:
+        :class:`telegram.InlineKeyboardMarkup` inline клавиатура
+    """
     k = 1
     button_list = []
     if len > 1:
@@ -31,6 +42,14 @@ def get_navigate_markup(len, index=0):
 
 
 def library_navigate_markup(len, index=0):
+    """
+    Отправляет меню для навигации в меню
+    Args:
+        len (:obj:`int`): количество фильмов в поисковой выдаче
+        index (:obj:`int`, optional): текущий индекс
+    Returns:
+        :class:`telegram.InlineKeyboardMarkup` inline клавиатура
+    """
     button_list = []
 
     if len > 1:
@@ -48,6 +67,11 @@ def library_navigate_markup(len, index=0):
 
 
 def main_menu():
+    """
+    Главное меню
+    Returns:
+        :class:`telegram.InlineKeyboardMarkup` inline клавиатура
+    """
     keyboard = [[InlineKeyboardButton("Add new subs",
                                       callback_data='search')],
                 [InlineKeyboardButton("My Library",
@@ -58,12 +82,22 @@ def main_menu():
 
 
 def Show_keyboard():
+    """
+    Клавиатура со вспомогательным меню
+    Returns:
+        :class:`telegram.ReplyKeyboardMarkup` inline клавиатура
+    """
     logger.info("Show KEYBOARD")
     custom_keyboard = [['/menu'], ['/help']]
     return ReplyKeyboardMarkup(custom_keyboard, one_time_keyboard=True)
 
 
 def library_menu(index):
+    """
+    Меню изуения слов
+    Args:
+        index (:obj:`int`): текущий индекс
+    """
     keyboard = [[InlineKeyboardButton("Get list of words",
                                       callback_data='lm1_%s' % index)],  # library menu 1
                 [InlineKeyboardButton("Get words one by one",
@@ -74,6 +108,14 @@ def library_menu(index):
 
 
 def render_navigate_markup(reply_markup, dic, update, index=0):
+    """
+    Отправляет пользовтелю првеью выбранного фильма
+    Args:
+        reply_markup(:class:`telegram.InlineKeyboardMarkup`): инлайн клавиатура
+        dic (:obj:`dict`): словарь со списоком фильмов
+        update(:class:`telegram.ext.Updater`): обновления
+        index (:obj:`int`, optional): текущий индекс
+    """
     update.message.reply_text("http://imdb.com/title/tt%s" % dic[index][1], reply_markup=reply_markup)
     logger.info("render_navigate_markup")
 
@@ -82,6 +124,16 @@ def build_menu(buttons,
                n_cols,
                header_buttons=None,
                footer_buttons=None):
+    """
+    Функция для создания встроенных меню
+    Args:
+        buttons (:class:`Sized`): массив с 'кнопками'
+        n_cols (:obj:`int`): количество кнопок
+        header_buttons (:class:`array`, optional): верхние кнопки
+        footer_buttons (:class:`array`, optional): нижние кнопки
+    Returns:
+        menu (:obj:`array`): массив кнопок
+    """
     menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
     if header_buttons:
         menu.insert(0, header_buttons)
@@ -91,6 +143,14 @@ def build_menu(buttons,
 
 
 def get_learn_list(dic, index=0):
+    """
+    Получить список из 5 слов для изучения
+    Args:
+        dic (:obj:`dict`): словарь со списоком фильмов
+        index (:obj:`int`, optional): текущий индекс
+    Returns:
+        out(:obj:`str`) список слов
+    """
     k = 0
     out = ''
     while (k <= 4 and index <= len(dic) - 1):
@@ -101,6 +161,16 @@ def get_learn_list(dic, index=0):
 
 
 def learn_navigate_markup(dic, index, len, title):
+    """
+    Меню изучения слов(списком из 5 слов)
+    Args:
+        dic (:obj:`dict`): словарь со списоком фильмов
+        index (:obj:`int`): текущий индекс
+        len (:obj:`int`): колличество всех слов
+        title (:obj:`int`): id фильма
+    Returns:
+        :class:`telegram.InlineKeyboardMarkup` inline клавиатура
+    """
     logger.info("Learn navigate")
     button_list = []
     head = []
@@ -127,10 +197,16 @@ def learn_navigate_markup(dic, index, len, title):
 
 
 def learn_card(index, title, flag):
+    """
+    Меню в карточке слова
+    Args:
+        index (:obj:`int`): текущий индекс
+        title (:obj:`int`): id фильма
+        flag (:obj:`int`): флаг, для распознования типа меню изучения слов
+    Returns:
+        :class:`telegram.InlineKeyboardMarkup` inline клавиатура
+    """
     button_list = []
-    # button_list.append(InlineKeyboardButton("Get sentence with this word",
-    #                                         callback_data="sentence_%s_%s_%s" % (str(index), str(title), str(flag))))
-
     button_list.append(InlineKeyboardButton("Got it 👌",
                                             callback_data="learned_%s_%s_%s_1" % (str(index), str(title), str(flag))))
     logger.info("flag in learn card - %s" % flag)
@@ -140,6 +216,15 @@ def learn_card(index, title, flag):
 
 
 def learn_navigate_markup_simple_version(index, len, title):
+    """
+    Меню изучения слов(по одному слову)
+    Args:
+        index (:obj:`int`): текущий индекс
+        len (:obj:`int`): количество слов
+        title (:obj:`int`): id фильма
+    Returns:
+        :class:`telegram.InlineKeyboardMarkup` inline клавиатура
+    """
     logger.info("Learn navigate (simple)")
     k = 2
     button_list = [
@@ -159,6 +244,14 @@ def learn_navigate_markup_simple_version(index, len, title):
 
 
 def get_card(word, imdb_id):
+    """
+    Получить карточку для слова
+    Args:
+        word (:obj:`str`): слово
+        imdb_id (:obj:`int`): id фильма на сайте *imdb.com*
+    Returns:
+        card (:obj:`array`): карточка слова
+    """
     logger.info("creating word card")
     postgre = DataBase()
     if (postgre.GetDefinition(word) != None):
@@ -174,7 +267,6 @@ def get_card(word, imdb_id):
         card = yadict.get_card(word)
     if not card:
         card = urbandict.get_card(word)
-
     if card:
         ts = yadict.get_transcription(word)
         sentence = get_sentence(word, imdb_id)
@@ -191,6 +283,14 @@ def get_card(word, imdb_id):
 
 
 def get_sentence(word, imdb_id):
+    """
+    Получить предложение для слова
+    Args:
+        word (:obj:`str`): слово
+        imdb_id (:obj:`int`): id фильма на сайте *imdb.com*
+    Returns:
+        sentence (:obj:`str`): предложение для слова
+    """
     OP = OpenSubtitles()
     logger.info("Getting sentence, OpenSubtitles token %s" % OP.login())
     postgre = DataBase()
@@ -210,6 +310,13 @@ def get_sentence(word, imdb_id):
 
 
 def get_study_card(card):
+    """
+    Получить карточки для изучения
+    Args:
+        card (:obj:`array`): карточка слова
+    Returns:
+        out (:obj:`str`): текст
+    """
     logger.info("get word card ")
     out = ""
     if (card['src'] == 'wordsapi'):

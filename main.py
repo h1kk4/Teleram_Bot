@@ -1,3 +1,7 @@
+"""
+Этот модуль описывает telegram-бота "@SubtitlesForUBot"
+"""
+
 from telegram import ParseMode
 from telegram.ext import Updater, CommandHandler
 from telegram.ext import MessageHandler, Filters
@@ -9,6 +13,7 @@ from cards import *
 from subtitles_download import *
 from db import DataBase
 from imdb import IMDb
+
 # Enable logging
 logging.basicConfig(format="""%(asctime)s - %(name)s -
                         %(levelname)s - %(message)s""",
@@ -18,29 +23,73 @@ logger = logging.getLogger(__name__)
 
 
 class SubsBot:
+    """
+        Класс реализует telegram-бота "@SubtitlesForUBot"
+        Attributes:
+            __token (:obj:`str`): токен бота
+            updater (:class:`telegram.ext.Updater`): объект представляет
+                входящие обновления
+            dispatcher (:class:`telegram.ext.Dispatcher`): объект представляет
+                обработчик обновлений
+        """
+
+    # initialisation bot
     def __init__(self, Token):
         self.__token = Token
         self.updater = Updater(self.__token)
         self.dispatcher = self.updater.dispatcher
 
+    # /start
     def start(self, bot, update):
+        """
+        Метод бота "/start"
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            update(:class:`telegram.ext.Updater`): обновления
+        """
         logger.info("Method start")
         reply_markup = Show_keyboard()
         bot.send_message(text=Settings.HelpTxt,
                          chat_id=update.message.chat_id,
                          reply_markup=reply_markup)
 
+    # /menu
     def menu(self, bot, update):
+        """
+        Метод бота "/menu"
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            update(:class:`telegram.ext.Updater`): обновления
+        """
+        chat_id = update.message.chat_id
+        if chat_id in flags:
+            flags[chat_id].set_flag_search(False)
         reply_markup = main_menu()
-        update.message.reply_text('Here is menu\n'
+        update.message.reply_text('Here is menu.\n'
                                   'Chose what you want to do:',
                                   reply_markup=reply_markup)
 
+    # /help
     def help(self, bot, update):
+        """
+        Метод бота "/help"
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            update(:class:`telegram.ext.Updater`): обновления
+        """
         logger.info("help")
         update.message.reply_text(Settings.HelpTxt)
 
     def SearchSubsMethod(self, bot, update, flag, id):
+        """
+        Вызов функции поиска субтитров для фильма и добавления их в базу данных
+        Или запрос сезона и номера серии для сериала
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            update(:class:`telegram.ext.Updater`): обновления
+            flag (:obj:`int`): флаг, обозначающий что добавляется фильм или сериал
+            id (:obj:`str`): id фильма или сериала на сайте *imdb.com*
+        """
         logger.info("Search for Subtitles")
         if (flag == 0):
             logger.info("Film Method")
@@ -53,6 +102,18 @@ class SubsBot:
             self.ask_for_season_episode(bot, id, update)
 
     def download_subtitles(self, bot, update, id, flag, episode=None, season=None):
+        """
+        Загрузка субтитров с сайта *https://www.opensubtitles.org/*
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            update (:class:`telegram.ext.Updater`): обновления
+            id (:obj:`str`): id фильма на сайте *imdb.com*
+            flag (:obj:`str`): флаг обозначающий что добавляется фильм или сериал
+            episode (:obj:`int`, optional): номер сезона
+            season (:obj`int`, optional): номер эпизода
+        Returns:
+            :obj:`bool`: удалось ли найти субтитры
+        """
         logger.info("Download method OpenSubtitles token %s" % OPExample.login())
         if flag == "series":
             chat_id = update.message.chat_id
@@ -79,17 +140,38 @@ class SubsBot:
         return True
 
     def add_words_to_db(self, imdb_id, data):
+        """
+        Добавление слов к фильму в базу данных
+        Args:
+            imdb_id (:class:`telegram.ext.Updater`): id фильма на сайте *imdb.com*
+            data (:obj:`set`): множество слов к фильму
+        """
         logger.info("adding words to database")
         postgre = DataBase()
         for label in data:
             postgre.AddWordsToLibrary(imdb_id=imdb_id, word=label)
 
     def add_subtitle_to_db(self, imdb_id, subtitle_id, episode=None, season=None):
+        """
+        Добававление информации о фильме в базу данных
+        Args:
+            imdb_id (:obj:`str`): id фильма на сайте *imdb.com*
+            subtitle_id (:obdj:`str`): id субтитров на сайте *opensubtitles.org*
+            episode (:obj:`int`, optional): номер сезона
+            season (:obj`int`, optional): номер эпизода
+        """
         logger.info("adding imdb_id - %s subtitle_id - %s to database" % (imdb_id, subtitle_id))
         postgre = DataBase()
         postgre.AddSubtitleToLibrary(subtitle_id=subtitle_id, imdb_id=imdb_id, episode=episode, season=season)
 
     def search_subs_on_opensubtitles(self, id):
+        """
+        Поиск субтитров на сайте *opensubtitles.org*
+        Args:
+            id (:obj:`str`): id фильма на сайте *imdb.com*
+        Returns:
+            :obj:`str`: id субтитров на сайте *opensubtitles.org*
+        """
         request_data = [{"sublanguageid": 'eng', 'imdbid': id}]
         idSubtitleFile = OPExample.search_subtitles(request_data)
         found_id = ''
@@ -102,7 +184,13 @@ class SubsBot:
         return found_id
 
     def ask_for_season_episode(self, bot, id, update):
-
+        """
+        Просьба отправить номер сезона и серии сериала
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            update (:class:`telegram.ext.Updater`): обновления
+            id (:obj:`str`): id фильма на сайте *imdb.com*
+        """
         flags[update.callback_query.message.chat_id].set_flag_series(True)
         flags[update.callback_query.message.chat_id].set_id_series(id)
         flags[update.callback_query.message.chat_id].set_flag_search(False)
@@ -115,12 +203,15 @@ class SubsBot:
                               message_id=update.callback_query.message.message_id)
 
     def text_handler(self, bot, update):
-
+        """
+        Обработка текстовых сообщений от пользователя
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            update(:class:`telegram.ext.Updater`): обновления
+        """
         if update.message.chat_id not in flags:
             self.help(bot, update)
             return
-
-
 
         # Search for episode of the series
 
@@ -130,15 +221,21 @@ class SubsBot:
 
         # Searching for name of the titles (filling thw menu of titles)
 
-        elif(flags[update.message.chat_id].get_flag_search() == True):
+        elif (flags[update.message.chat_id].get_flag_search() == True):
             logger.info("Search for title %s" % update.message.text)
             self.titles_search(bot, update)
 
         else:
             update.message.reply_text(Settings.NotInMenuTxt)
 
-
     def search_subtitles_for_episode(self, bot, update):
+        """
+        Поиск субтитров для эпизодов сериала
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            update(:class:`telegram.ext.Updater`): обновления
+
+        """
         flags[update.message.chat_id].set_flag_series(False)
         logger.info("OpenSubtitles token %s" % OPExample.login())
 
@@ -150,10 +247,12 @@ class SubsBot:
         id_of_series = ''
         title = ''
         for label in ((OPExample.search_subtitles(request_data))['data']):
+            print(label)
             if label["SeriesSeason"] == season and label["SeriesEpisode"] == episode:
                 title = label["MovieName"]
                 id_of_series = label["IDMovieImdb"]
-                id_of_series = "tt" + id_of_series
+                print("->", id_of_series)
+                id_of_series = "tt0" + id_of_series
                 OPExample.logout()
                 break
 
@@ -189,7 +288,13 @@ class SubsBot:
         OPExample.logout()
 
     def titles_search(self, bot, update):
+        """
+        Поиск фильмов
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            update(:class:`telegram.ext.Updater`): обновления
 
+        """
         logger.info('Fill out the cards on request "%s"' % update.message.text)
         dic = {}
         i = 0
@@ -199,8 +304,8 @@ class SubsBot:
         movies = ia.search_movie(update.message.text)
         if movies != []:
             for item in movies:
-                dic[i] = [self.what_run(item['kind']),item.movieID ]
-                i+=1
+                dic[i] = [self.what_run(item['kind']), item.movieID]
+                i += 1
 
             reply_markup = get_navigate_markup(len(dic))
             render_navigate_markup(reply_markup, dic, update)
@@ -238,6 +343,14 @@ class SubsBot:
         OPExample.logout()
 
     def what_run(self, str):
+        """
+        Метод для определения типа ответа от сервера
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            update(:class:`telegram.ext.Updater`): обновления
+        Returns:
+            :obj:`int`: 1 если сериал, 0 если фильм
+        """
         data = str.lower()
         if (data.find("tv series") != -1):
             logger.info("set flag series")
@@ -247,13 +360,26 @@ class SubsBot:
             return 0
 
     def user_data(self, chat_id):
+        """
+        Возвращает список слов для изучения и библиотеку для пользователя
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            update(:class:`telegram.ext.Updater`): обновления
+        Returns:
+
+        """
         words = flags[chat_id].get_words()
         library = flags[chat_id].get_library()
         dic = {'words': words, 'library': library}
         return dic
 
     def button(self, bot, update):
-
+        """
+        Обработка событий от inline-клавиатуры
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            update(:class:`telegram.ext.Updater`): обновления
+        """
         logger.info("Method button")
 
         query = update.callback_query
@@ -261,174 +387,260 @@ class SubsBot:
         #
         if (query.data == 'search'):
             # Search for new title
-
-            bot.edit_message_text(text="Please send me the name of the title: ",
-                                  chat_id=chat_id,
-                                  message_id=query.message.message_id)
-            flags[chat_id] = Flags()
-            flags[chat_id].set_flag_search(True)
+            self.search_button(bot, query, chat_id)
 
         if (query.data == 'learn'):
             # Render user library
-            self.render_library(bot, query, chat_id)
+            self.render_library_button(bot, query, chat_id)
 
         if ((query.data.split('_')[0]) == 's'):
-            # User select title to learn
-
-            data = flags[chat_id].get_titles()
-            index = int(query.data.split('_')[1])
-            logger.info("select button index %s, flag %s, title %s" % (index, data[index][0], data[index][1]))
-            self.SearchSubsMethod(bot, update, data[index][0], data[index][1])
-
-            logger.info("selected")
+            # User select title to add in library
+            self.add_to_library_button(bot, update, query, chat_id)
 
         if ((query.data.split('_')[0]) == 'n'):
             # Chosen navigation button in searching
-
-            data = flags[chat_id].get_titles()
-            index = int(query.data.split('_')[1])
-            logger.info("index %s, flag %s, title %s" % (index, data[index][0], data[index][1]))
-            reply_markup = get_navigate_markup(len(data), index)
-            bot.edit_message_text(text="http://imdb.com/title/tt%s" % data[index][1],
-                                  reply_markup=reply_markup,
-                                  chat_id=chat_id,
-                                  message_id=query.message.message_id)
-
-            logger.info("navigate in searching")
+            self.search_navigate_button(bot, query, chat_id)
 
         if ((query.data.split('_')[0]) == 'ls'):
             # Chosen title to learn from user library
-
-            index = int(query.data.split("_")[1])  # index in dic of users library
-            dic = flags[chat_id].get_library()
-            title = dic[index][1]  # title - imdb_id of film/series
-            logger.info("index %s title %s" % (index, dic[index][1]))
-
-            reply_markup = library_menu(index)
-
-            bot.edit_message_text(text="Chose how you want to learn words",
-                                  reply_markup=reply_markup,
-                                  chat_id=chat_id,
-                                  message_id=query.message.message_id)
-
-            logger.info(("User selected title - %s to learn") % title)
+            self.select_title_to_learn_button(bot, query, chat_id)
 
         if ((query.data.split('_')[0]) == "lm1"):
             # First version of learning card
-
-            index = int(query.data.split("_")[1])  # index in dic of users library
-            dic = flags[chat_id].get_library()
-            title = dic[index][1]  # title - imdb_id of film/series
-            logger.info("index %s title %s" % (index, dic[index][1]))
-
-            postgre = DataBase()
-            flags[chat_id].set_words(postgre.GetWordsForTitle(chat_id, title))
-
-            words = flags[chat_id].get_words()
-            reply_markup = learn_navigate_markup(words, 0, len(words), index)
-
-            bot.edit_message_text(
-                text="*%s* words left to learn for this title\n%s" % (len(words), get_learn_list(words)),
-                reply_markup=reply_markup,
-                chat_id=chat_id,
-                message_id=query.message.message_id,
-                parse_mode=ParseMode.MARKDOWN)
+            self.library_menu_1_button(bot, query, chat_id)
 
         if ((query.data.split('_')[0]) == "lm2"):
             # Second version of learning card
-
-            index = int(query.data.split("_")[1])  # index in dic of users library
-            dic = flags[chat_id].get_library()
-            title = dic[index][1]  # title - imdb_id of film/series
-            logger.info("index %s title %s" % (index, dic[index][1]))
-
-            postgre = DataBase()
-            flags[chat_id].set_words(postgre.GetWordsForTitle(chat_id, title))
-
-            words = flags[chat_id].get_words()
-            reply_markup = learn_navigate_markup_simple_version(0, len(words), index)
-            bot.edit_message_text(
-                text="*%s* words left to learn for this title\n word - *%s*" % (len(words), words[0][1]),
-                reply_markup=reply_markup,
-                chat_id=chat_id,
-                message_id=query.message.message_id,
-                parse_mode=ParseMode.MARKDOWN)
+            self.library_menu_2_button(bot, query, chat_id)
 
         if ((query.data.split('_')[0]) == 'ln'):
             # Chosen navigation button in library
-
-            index = int(query.data.split("_")[1])
-            dic = flags[chat_id].get_library()
-            logger.info("index %s title " % (index))
-            # , dic[index][1]))
-            reply_markup = library_navigate_markup(len(dic), index)
-
-            text_out = "http://imdb.com/title/tt%s" % dic[index][1]
-            postgre = DataBase()
-
-            series_info = postgre.GetSeriesInfo(dic[index][1])
-            if (series_info):
-                text_out += "\n *Season* - %s *Episode* - %s" % (series_info['season'], series_info['episode'])
-            bot.edit_message_text(text=text_out,
-                                  reply_markup=reply_markup,
-                                  chat_id=chat_id,
-                                  message_id=query.message.message_id,
-                                  parse_mode=ParseMode.MARKDOWN)
-            logger.info("navigate in library")
+            self.navigation_in_library_button(bot, query, chat_id)
 
         if ((query.data.split('_')[0]) == 'len'):
             # Chosen navigation button in learning menu
-            self.navigation_in_learning_card(bot, query, chat_id)
+            self.navigation_in_learning_card_button(bot, query, chat_id)
 
         if ((query.data.split('_')[0]) == 'les'):
             # Chose word to get more information
-
-            index = int(query.data.split("_")[1])
-            title = int(query.data.split("_")[2])
-            flag = query.data.split("_")[3]
-            dic = flags[chat_id].get_words()
-            logger.info("Word to learn - %s" % dic[index][1])
-            card = get_card(dic[index][1], flags[chat_id].get_library()[title][1])
-
-            if flag == "1":
-                reply_markup = learn_card(index, title, '1')
-            else:
-                reply_markup = learn_card(index, title, '0')
-
-            if card:
-                text_out = get_study_card(card)
-            else:
-                text_out = "Nothing been found"
-
-            bot.edit_message_text(text=text_out,
-                                  reply_markup=reply_markup,
-                                  chat_id=chat_id,
-                                  message_id=query.message.message_id,
-                                  parse_mode=ParseMode.MARKDOWN)
+            self.chose_word_button(bot, query, chat_id)
 
         if (query.data.split('_')[0] == 'learned'):
             # User said that he know this word
-            self.learn_func(bot, query, chat_id)
+            self.learn_button(bot, query, chat_id)
 
         if (query.data == "finish"):
             # Finish studying
-
-            flags[chat_id].reset_words()
-            flags[chat_id].reset_library()
-            reply_markup = main_menu()
-            bot.edit_message_text(text="Please choose what you want to do:",
-                                  reply_markup=reply_markup,
-                                  chat_id=chat_id,
-                                  message_id=query.message.message_id)
+            self.finish_button(bot, query, chat_id)
 
         if (query.data.split("_")[0] == "delete"):
             # Delete title from user library
-            self.delete_title_from_library(bot, query, chat_id)
+            self.delete_title_from_library_button(bot, query, chat_id)
 
         return logger.info("done button method")
 
-    def delete_title_from_library(self, bot, query, chat_id):
+    def search_button(self, bot, query, chat_id):
+        """
+        Кнопка поиска
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            query (:class:`telegram.CallbackQuery`): возвращаемое значение от inline клавиатуры
+            chat_id (:obj:`int`) id пользователя
+        """
+        bot.edit_message_text(text="Please send me the name of the title: ",
+                              chat_id=chat_id,
+                              message_id=query.message.message_id)
+        flags[chat_id] = Flags()
+        flags[chat_id].set_flag_search(True)
 
+    def finish_button(self, bot, query, chat_id):
+        """
+        Кнопка finish
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            query (:class:`telegram.CallbackQuery`): возвращаемое значение от inline клавиатуры
+            chat_id (:obj:`int`) id пользователя
+        """
+        flags[chat_id].reset_words()
+        flags[chat_id].reset_library()
+        reply_markup = main_menu()
+        bot.edit_message_text(text="Please choose what you want to do:",
+                              reply_markup=reply_markup,
+                              chat_id=chat_id,
+                              message_id=query.message.message_id)
+
+    def add_to_library_button(self, bot, update, query, chat_id):
+        """
+        Добавление фильма в библиотеку
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            query (:class:`telegram.CallbackQuery`): возвращаемое значение от inline клавиатуры
+            chat_id (:obj:`int`) id пользователя
+        """
+        data = flags[chat_id].get_titles()
+        index = int(query.data.split('_')[1])
+        logger.info("select button index %s, flag %s, title %s" % (index, data[index][0], data[index][1]))
+        self.SearchSubsMethod(bot, update, data[index][0], data[index][1])
+
+        logger.info("user add title to library")
+
+    def search_navigate_button(self, bot, query, chat_id):
+        """
+        Кнопка навигации в библиотеке
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            query (:class:`telegram.CallbackQuery`): возвращаемое значение от inline клавиатуры
+            chat_id (:obj:`int`) id пользователя
+        """
+        data = flags[chat_id].get_titles()
+        index = int(query.data.split('_')[1])
+        logger.info("index %s, flag %s, title %s" % (index, data[index][0], data[index][1]))
+        reply_markup = get_navigate_markup(len(data), index)
+        bot.edit_message_text(text="http://imdb.com/title/tt%s" % data[index][1],
+                              reply_markup=reply_markup,
+                              chat_id=chat_id,
+                              message_id=query.message.message_id)
+
+        logger.info("navigate in searching")
+
+    def select_title_to_learn_button(self, bot, query, chat_id):
+        """
+        Кнопка для выбора фильма, который хочешь начать изуачать
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            query (:class:`telegram.CallbackQuery`): возвращаемое значение от inline клавиатуры
+            chat_id (:obj:`int`) id пользователя
+        """
+        index = int(query.data.split("_")[1])  # index in dic of users library
+        dic = flags[chat_id].get_library()
+        title = dic[index][1]  # title - imdb_id of film/series
+        logger.info("index %s title %s" % (index, dic[index][1]))
+
+        reply_markup = library_menu(index)
+
+        bot.edit_message_text(text="Chose how you want to learn words",
+                              reply_markup=reply_markup,
+                              chat_id=chat_id,
+                              message_id=query.message.message_id)
+
+        logger.info(("User selected title - %s to learn") % title)
+
+    def library_menu_1_button(self, bot, query, chat_id):
+        """
+        Меню изучения слов(списком из 5 слов)
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            query (:class:`telegram.CallbackQuery`): возвращаемое значение от inline клавиатуры
+            chat_id (:obj:`int`) id пользователя
+        """
+        index = int(query.data.split("_")[1])  # index in dic of users library
+        dic = flags[chat_id].get_library()
+        title = dic[index][1]  # title - imdb_id of film/series
+        logger.info("index %s title %s" % (index, dic[index][1]))
+
+        postgre = DataBase()
+        flags[chat_id].set_words(postgre.GetWordsForTitle(chat_id, title))
+
+        words = flags[chat_id].get_words()
+        reply_markup = learn_navigate_markup(words, 0, len(words), index)
+
+        bot.edit_message_text(
+            text="*%s* words left to learn for this title\n%s" % (len(words), get_learn_list(words)),
+            reply_markup=reply_markup,
+            chat_id=chat_id,
+            message_id=query.message.message_id,
+            parse_mode=ParseMode.MARKDOWN)
+
+    def library_menu_2_button(self, bot, query, chat_id):
+        """
+        Меню изучения слов(по одному слову)
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            query (:class:`telegram.CallbackQuery`): возвращаемое значение от inline клавиатуры
+            chat_id (:obj:`int`) id пользователя
+        """
+        index = int(query.data.split("_")[1])  # index in dic of users library
+        dic = flags[chat_id].get_library()
+        title = dic[index][1]  # title - imdb_id of film/series
+        logger.info("index %s title %s" % (index, dic[index][1]))
+
+        postgre = DataBase()
+        flags[chat_id].set_words(postgre.GetWordsForTitle(chat_id, title))
+
+        words = flags[chat_id].get_words()
+        reply_markup = learn_navigate_markup_simple_version(0, len(words), index)
+        bot.edit_message_text(
+            text="*%s* words left to learn for this title\n word - *%s*" % (len(words), words[0][1]),
+            reply_markup=reply_markup,
+            chat_id=chat_id,
+            message_id=query.message.message_id,
+            parse_mode=ParseMode.MARKDOWN)
+
+    def navigation_in_library_button(self, bot, query, chat_id):
+        """
+        Кнопка для перемещения по библиотеке
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            query (:class:`telegram.CallbackQuery`): возвращаемое значение от inline клавиатуры
+            chat_id (:obj:`int`) id пользователя
+        """
+        index = int(query.data.split("_")[1])
+        dic = flags[chat_id].get_library()
+        logger.info("index %s title " % (index))
+        reply_markup = library_navigate_markup(len(dic), index)
+
+        text_out = "http://imdb.com/title/tt%s" % dic[index][1]
+        postgre = DataBase()
+
+        series_info = postgre.GetSeriesInfo(dic[index][1])
+        if (series_info):
+            text_out += "\n *Season* - %s *Episode* - %s" % (series_info['season'], series_info['episode'])
+        bot.edit_message_text(text=text_out,
+                              reply_markup=reply_markup,
+                              chat_id=chat_id,
+                              message_id=query.message.message_id,
+                              parse_mode=ParseMode.MARKDOWN)
+        logger.info("navigate in library")
+
+    def chose_word_button(self, bot, query, chat_id):
+        """
+        Кнопка выбора слова для изучения
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            query (:class:`telegram.CallbackQuery`): возвращаемое значение от inline клавиатуры
+            chat_id (:obj:`int`) id пользователя
+        """
+        index = int(query.data.split("_")[1])
+        title = int(query.data.split("_")[2])
+        flag = query.data.split("_")[3]
+        dic = flags[chat_id].get_words()
+        logger.info("Word to learn - %s" % dic[index][1])
+        card = get_card(dic[index][1], flags[chat_id].get_library()[title][1])
+
+        if flag == "1":
+            reply_markup = learn_card(index, title, '1')
+        else:
+            reply_markup = learn_card(index, title, '0')
+
+        if card:
+            text_out = get_study_card(card)
+        else:
+            text_out = "Nothing been found"
+
+        bot.edit_message_text(text=text_out,
+                              reply_markup=reply_markup,
+                              chat_id=chat_id,
+                              message_id=query.message.message_id,
+                              parse_mode=ParseMode.MARKDOWN)
+
+    def delete_title_from_library_button(self, bot, query, chat_id):
+        """
+        Кнопка для удаления фильма из библиотеки
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            query (:class:`telegram.CallbackQuery`): возвращаемое значение от inline клавиатуры
+            chat_id (:obj:`int`) id пользователя
+        """
         index = int(query.data.split("_")[1])
         data = flags[chat_id].get_library()
         logger.info("deleting %s" % data[index][1])
@@ -458,7 +670,14 @@ class SubsBot:
                               reply_markup=reply_markup,
                               parse_mode=ParseMode.MARKDOWN)
 
-    def render_library(self, bot, query, chat_id):
+    def render_library_button(self, bot, query, chat_id):
+        """
+        Отображение библиотеки пользователя
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            query (:class:`telegram.CallbackQuery`): возвращаемое значение от inline клавиатуры
+            chat_id (:obj:`int`) id пользователя
+        """
         postgre = DataBase()
         flags[chat_id] = Flags()
         flags[chat_id].set_library(postgre.GetUserLibrary(chat_id))
@@ -481,7 +700,14 @@ class SubsBot:
 
         logger.info("rendered library list for %s " % chat_id)
 
-    def navigation_in_learning_card(self, bot, query, chat_id):
+    def navigation_in_learning_card_button(self, bot, query, chat_id):
+        """
+        Отоборажение меню в карточке для слова
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            query (:class:`telegram.CallbackQuery`): возвращаемое значение от inline клавиатуры
+            chat_id (:obj:`int`) id пользователя
+        """
         index = int(query.data.split("_")[1])
         title = int(query.data.split("_")[2])
         words = flags[chat_id].get_words()
@@ -511,7 +737,14 @@ class SubsBot:
                              chat_id=chat_id,
                              parse_mode=ParseMode.MARKDOWN)
 
-    def learn_func(self, bot, query, chat_id):
+    def learn_button(self, bot, query, chat_id):
+        """
+        Кнопка для отметки слова как изученого
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            query (:class:`telegram.CallbackQuery`): возвращаемое значение от inline клавиатуры
+            chat_id (:obj:`int`) id пользователя
+        """
         index = int(query.data.split("_")[1])
         title_id = int(query.data.split("_")[2])
         word = flags[chat_id].get_words()
@@ -568,10 +801,19 @@ class SubsBot:
             logger.info("navigate in learning")
 
     def error(self, update, error):
+        """
+        Обработка ошибок
+        Args:
+            bot (:class:`telegram.Bot`): хэндлер бота
+            update(:class:`telegram.ext.Updater`): обновления
+
+        """
         logger.warn('Update "%s" caused error "%s"' % (update, error))
 
     def AddHandler(self):
-
+        """
+        Добавление хэндлеров в Диспатчер
+        """
         self.dispatcher.add_handler(CommandHandler("start", self.start))
         self.dispatcher.add_handler(CommandHandler("help", self.help))
         self.dispatcher.add_handler(CommandHandler("menu", self.menu))
@@ -581,13 +823,18 @@ class SubsBot:
         self.dispatcher.add_error_handler(self.error)
 
     def startBot(self):
-
+        """
+        Запуск telegram-бота
+        """
         self.AddHandler()
         self.updater.start_polling()
         self.updater.idle()
 
 
 if __name__ == '__main__':
+    """
+    Main
+    """
     OPExample = OpenSubtitles()
     OMDBExample = OMDB()
     flags = {}

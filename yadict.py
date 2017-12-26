@@ -1,3 +1,6 @@
+"""
+Этот модуль сождержит функции для работы с Yandex API
+"""
 import requests
 from settings import Settings
 
@@ -11,6 +14,16 @@ YATRANSLATE_LANG = 'en-ru'
 
 
 def get_card(word):
+    """
+    Получить информацию о слове
+    Args:
+        word (str): слово
+    Returns:
+        card(dict):
+            + слово
+            + определение
+            + ресурс
+    """
     response = requests.get(
         YADICT_URL,
         params={
@@ -47,6 +60,13 @@ def get_card(word):
 
 
 def get_transcription(word):
+    """
+    Получить транскрипцию слова
+    Args:
+        word (str): слово
+    Returns:
+        (str): транскрипция
+    """
     try:
         response = requests.get(
             YADICT_URL,
@@ -65,6 +85,13 @@ def get_transcription(word):
 
 
 def get_translations(word):
+    """
+    Получить перевод слова
+    Args:
+        word (str): слово
+    Returns:
+        (str): перевод
+    """
     try:
         response = requests.get(
             YATRANSLATE_URL,

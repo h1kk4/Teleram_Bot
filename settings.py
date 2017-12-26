@@ -1,9 +1,31 @@
+"""Этот модуль сожержит строки
+Args:
+
+    Настойки для OpenSubtitles Api:
+        OPENSUBTITLES_SERVER :obj:`str`: - адрес сервера
+        USER_AGENT :obj:`str`: - User Agent
+        LANGUAGE :obj:`str`: - язык
+        USER_NAME :obj:`str`: -  username
+        USER_PASSWORD :obj:`str`: - пароль
+
+
+    EmptyLibraryTxt :obj:`str`: - строка сообщения при пустой библиотеке
+    HelpTxt :obj:`str`: - строка при вызове /help
+    NotInMenuTxt :obj:`str`: - строка сообщения, если пользователь не в меню
+    telegram_token :obj:`str`: - стока с токеном для Telegram
+    OMDBapikey :obj:`str`: - стока с токеном для OMDB Api
+    YADICT_KEY :obj:`str`: - стока с токеном для Yandex Dictionary
+    YATRANSLATE_KEY :obj:`str`: - стока с токеном для Yandex Translater
+    MASHAPE_KEY :obj:`str`: - стока с токеном для mashape
+
+"""
+
 class Settings(object):
-    OPENSUBTITLES_SERVER = 'http://api.opensubtitles.org:80/xml-rpc'
-    USER_AGENT = 'SubsBotUserAgent'
-    LANGUAGE = 'en'
-    USER_NAME = 'h1kk4'
-    USER_PASSWORD = 'pugajemas'
+    OPENSUBTITLES_SERVER = ''
+    USER_AGENT = ''
+    LANGUAGE = ''
+    USER_NAME = ''
+    USER_PASSWORD = ''
 
     EmptyLibraryTxt = "You have not added any movies yet.\n " \
                       "Open /menu to add new titles."
@@ -17,9 +39,9 @@ class Settings(object):
     NotInMenuTxt = "Ooops.\n" \
                    "You are not in menu. To search for titles just open /menu."
 
-    telegram_token = "443853738:AAFqfCt74WeSS7ea75Sc2mpEbGAuZacdaiI"
+    telegram_token = ""
 
-    OMDBapikey = "46e2cce"
-    YADICT_KEY = "dict.1.1.20171114T191912Z.e6cf7f858e4de103.cda2e4f4935c5f9adb77424a55be06f0cf533cd4"
-    YATRANSLATE_KEY = 'trnsl.1.1.20171014T220357Z.578d1703f2928529.8305107e8a6022f127dfb2a4fa177aeb5ae098cf'
-    MASHAPE_KEY = 'y4ueGKZdPzmshLr6dheyPokoxvolp1vWfXQjsneXC1iVJBX4rQ'
+    OMDBapikey = ""
+    YADICT_KEY = ""
+    YATRANSLATE_KEY = ""
+    MASHAPE_KEY = ""
